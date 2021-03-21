@@ -45,7 +45,7 @@ async function main(){
         else if (result === 'valid_deposit') {
           let payload = JSON.parse(tx.payload)
           console.log(`New HE deposit detected! ${payload.quantity} ${process.env.TOKEN_SYMBOL} sent by ${tx.sender}`)
-          sendEthereumTokens.start(payload.quantity, payload.memo, tx.sender, logger)
+          sendEthereumTokens.start(payload.quantity, payload.memo, tx.sender, logger, tx.transactionId)
         }
       })
       .catch((err) => {

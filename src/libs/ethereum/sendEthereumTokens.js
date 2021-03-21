@@ -9,7 +9,7 @@ const hive = new Hive({rpc_error_limit: 5}, {rpc_nodes: process.env.HIVE_RPC_NOD
 const tokenABI = require("./tokenABI.js");
 const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
-async function start(depositAmount, address, sender, logger){
+async function start(depositAmount, address, sender, logger, depositTransaction){
   try {
     let gasPrice = await getRecomendedGasPrice()
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
@@ -38,7 +38,7 @@ async function start(depositAmount, address, sender, logger){
       let serializedTx = tx.serialize();
       let receipt = await web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
       let { transactionHash, gasUsed, status } = receipt
-      sendDepositConfirmation(transactionHash, sender)
+      sendDepositConfirmation(transactionHash, sender, depositTransaction)
       if (gasUsed < estimatedGasFee.estimatedGas){ //refund any extra fees
         let spendTransactionFeeInHETokens = parseFloat(gasUsed / hiveEngineTokenPriceInEther).toFixed(process.env.HIVE_TOKEN_PRECISION)
         let extraFeeRefund = (estimatedTransactionFeeInHETokens / Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)) - spendTransactionFeeInHETokens
@@ -75,13 +75,18 @@ async function sendFeeRefund(amount, sender){
   let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
 }
 
-async function sendDepositConfirmation(transactionHash, sender){
+async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
+  if (process.env.IS_LEO_BRIDGE_ENABLED && sender == 'leobridge'){
+    let memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}, depositTxHash: ${depositTransactionHash}`
+  } else {
+    let memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
+  }
   let json = {
     contractName: "tokens", contractAction: "transfer", contractPayload: {
       symbol: process.env.TOKEN_SYMBOL,
       to: sender,
       quantity: Math.pow(10, -(process.env.HIVE_TOKEN_PRECISION)).toString(),
-      memo: `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
+      memo: memo
     }
   }
   let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
