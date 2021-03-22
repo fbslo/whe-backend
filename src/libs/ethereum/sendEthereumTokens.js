@@ -19,7 +19,7 @@ async function start(depositAmount, address, sender, logger, depositTransactionH
     // let hiveEngineTokenPriceInEther = await hiveEngineTokenPrice.start(); //get HE token price in ETH
     // let estimatedGasFee = await caculateTransactionFee(contract, address, amount, gasPrice); //get estimated ETH used
     // let estimatedTransactionFeeInHETokens = parseFloat(estimatedGasFee.etherValue / hiveEngineTokenPriceInEther * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)).toFixed(0)
-    amount = parseFloat(amount).toFixed(0)
+    amount = parseFloat(amount - 1000).toFixed(0)
     if (amount <= 0){ //if amount is less than 1, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
@@ -77,10 +77,11 @@ async function sendFeeRefund(amount, sender){
 }
 
 async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
+  let memo;
   if (process.env.IS_LEO_BRIDGE_ENABLED && sender == 'leobridge'){
-    let memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}, depositTxHash: ${depositTransactionHash}`
+    memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}, depositTxHash: ${depositTransactionHash}`
   } else {
-    let memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
+    memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
   }
   let json = {
     contractName: "tokens", contractAction: "transfer", contractPayload: {
