@@ -52,13 +52,13 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       sender: sender,
       time: new Date()
     }
-    if ((e).toString().includes("Transaction was not mined within 750 seconds") || (e).toString().includes("Failed to check for transaction")){
-      console.log(`Error (not minted within 750 seconds) NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
-      logger.log('error', `Error (not minted within 750 seconds) NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
+    if ((e).toString().includes("insufficient funds for gas * price + value")){
+      console.log(`Error while sending ERC-20 token (out of gas), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      logger.log('error', `Error while sending ERC-20 token (out of gas), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request, details: Not enough ETH for gas cost')
     } else {
-      console.log(`Error while sending ERC-20 token, refunded: ${e}, details: ${JSON.stringify(details)}`)
-      logger.log('error', `Error while sending ERC-20 token, refunded: ${e}, details: ${JSON.stringify(details)}`)
-      refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request')
+      console.log(`Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
+      logger.log('error', `Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
     }
   }
 }
