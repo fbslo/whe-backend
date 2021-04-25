@@ -59,6 +59,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     } else {
       console.log(`Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
       logger.log('error', `Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
+      refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
 }
