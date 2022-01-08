@@ -2,6 +2,8 @@ const Web3 = require("web3");
 const Tx = require('ethereumjs-tx').Transaction;
 const axios = require("axios");
 const { Hive } = require("@splinterlands/hive-interface")
+const sigUtil = require("eth-sig-util")
+const ethers = require("ethers")
 
 const web3 = new Web3(new Web3.providers.HttpProvider(process.env.ETHEREUM_ENDPOINT));
 const hive = new Hive({rpc_error_limit: 5}, {rpc_nodes: process.env.HIVE_RPC_NODES.split(',')});
@@ -11,19 +13,19 @@ const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
 async function start(depositAmount, address, sender, logger, depositTransaction){
   try {
-    let gasPrice = await getRecomendedGasPrice()
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
     let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
     let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
-    let hiveEngineTokenPriceInEther = await hiveEngineTokenPrice.start(); //get HE token price in ETH
-    let estimatedGasFee = await caculateTransactionFee(contract, address, amount, gasPrice); //get estimated ETH used
-    let estimatedTransactionFeeInHETokens = parseFloat(estimatedGasFee.etherValue / hiveEngineTokenPriceInEther * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)).toFixed(0)
-    amount = parseFloat(amount - estimatedTransactionFeeInHETokens).toFixed(0)
+    amount = parseFloat(amount - (process.env.FIXED_FEE * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION))).toFixed(0); //remove fixed fee of 1 token
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
-      let contractFunction = contract.methods[process.env.ETHEREUM_CONTRACT_FUNCTION](address, amount).encodeABI(); //either mint() or transfer() tokens
+
+      let sigNonce = await getSignatureNonce();
+      let signature = await prepareSignature(address, amount, sigNonce);
+
+      let contractFunction = contract.methods["mintWithPermit"](address, amount, signature, sigNonce).encodeABI();
       let rawTransaction = {
         "from": process.env.ETHEREUM_ADDRESS,
         "nonce": "0x" + nonce.toString(16),
@@ -38,12 +40,9 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let serializedTx = tx.serialize();
       let receipt = await web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
       let { transactionHash, gasUsed, status } = receipt
+
+
       sendDepositConfirmation(transactionHash, sender, depositTransaction)
-      if (gasUsed < estimatedGasFee.estimatedGas){ //refund any extra fees
-        let spendTransactionFeeInHETokens = parseFloat(gasUsed / hiveEngineTokenPriceInEther).toFixed(process.env.HIVE_TOKEN_PRECISION)
-        let extraFeeRefund = (estimatedTransactionFeeInHETokens / Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)) - spendTransactionFeeInHETokens
-        sendFeeRefund(parseFloat(extraFeeRefund).toFixed(process.env.HIVE_TOKEN_PRECISION), sender)
-      }
     }
   } catch(e){
     let details  = {
@@ -62,18 +61,6 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
-}
-
-async function sendFeeRefund(amount, sender){
-  let json = {
-    contractName: "tokens", contractAction: "transfer", contractPayload: {
-      symbol: process.env.TOKEN_SYMBOL,
-      to: sender,
-      quantity: amount.toString(),
-      memo: `Refund of over-estimated transaction fees: ${amount} ${process.env.TOKEN_SYMBOL}`
-    }
-  }
-  let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
 }
 
 async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
@@ -106,30 +93,26 @@ async function refundFailedTransaction(depositAmount, sender, message){
   let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
 }
 
-function getRecomendedGasPrice(){
-  return new Promise((resolve, reject) => {
-    axios
-      .get(`https://ethgasstation.info/api/ethgasAPI.json?api-key=${process.env.ETH_GAS_STATON_API_KEY}`)
-      .then(response => {
-        let speed = process.env.ETH_FEE_SPEED
-        if (response.data[speed]) resolve(response.data[speed] / 10)
-        else reject("data_incorrect")
-      })
-      .catch(err => {
-        reject(err)
-      });
+function prepareSignature(to, amount, nonce){
+  return new Promis((resolve, reject) => {
+    let msgHash = await web3.utils.soliditySha3(to, amount, nonce, process.env.ETHEREUM_CONTRACT_ADDRESS, process.env.CHAIN_ID);
+    let msgParams = {
+      data: msgHash
+    }
+
+    if (!process.env.ETHEREUM_PRIVATE_KEY.startsWith('0x')) process.env.ETHEREUM_PRIVATE_KEY = '0x' + process.env.ETHEREUM_PRIVATE_KEY
+
+    let signature = await sigUtil.personalSign(ethers.utils.arrayify(process.env.ETHEREUM_PRIVATE_KEY), msgParams)
+    resolve(signature);
   })
 }
 
-async function caculateTransactionFee(contract, address, amount, gasPrice){
+async function getSignatureNonce(nonce){
   return new Promise(async (resolve, reject) => {
-    let contractFunction = contract.methods[process.env.ETHEREUM_CONTRACT_FUNCTION](address, amount);
-    let estimatedGas = await contractFunction.estimateGas({ from: process.env.ETHEREUM_ADDRESS });
-    let wei = parseFloat(estimatedGas * gasPrice * 1000000000).toFixed(0)
-    let etherValue = Web3.utils.fromWei(wei.toString(), 'ether');
-    resolve({
-      etherValue: etherValue,
-      estimatedGas: estimatedGas
+    database.collection("signature_nonce").findOne({ name: latesNonce }, (err, result) => {
+      if (err) reject(err)
+      else if (result == undefined) resolve(false)
+      else resolve(result.nonce)
     })
   })
 }
