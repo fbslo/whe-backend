@@ -8,6 +8,9 @@ const ethers = require("ethers")
 const web3 = new Web3(new Web3.providers.HttpProvider(process.env.ETHEREUM_ENDPOINT));
 const hive = new Hive({rpc_error_limit: 5}, {rpc_nodes: process.env.HIVE_RPC_NODES.split(',')});
 
+const mongo = require("../../mongo.js")
+const database = mongo.get().db("oracle")
+
 const tokenABI = require("./tokenABI.js");
 const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
