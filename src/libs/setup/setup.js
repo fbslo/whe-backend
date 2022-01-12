@@ -13,7 +13,7 @@ async function isFirstSetup(){
 
 async function databaseSetup(){
   console.log(`Initializing database...`)
-  let collections = ["status", "hive_transactions", "ethereum_transactions", "mempool"]
+  let collections = ["status", "hive_transactions", "ethereum_transactions", "mempool", "signature_nonces"]
   await createCollections(collections);
   await updateState()
   await updateLastBlock()
@@ -39,6 +39,12 @@ function updateState(){
 
 function updateLastBlock(){
   database.collection("status").insertOne({ type: "last_eth_block", block: 0 }, { upsert: true }, (err, result) => {
+    if (err) reject(err)
+  })
+}
+
+function updateSignatureNonce(){
+  database.collection("signature_nonces").insertOne({ type: "latestNonce", nonce: 0 }, { upsert: true }, (err, result) => {
     if (err) reject(err)
   })
 }

@@ -691,13 +691,6 @@ pragma solidity ^0.5.0;
  * At construction, the deployer of the contract is the only minter.
  */
 contract ERC20Mintable is ERC20, MinterRole {
-    mapping (uint256 => bool) public nonces;
-    mapping(address => bool) public isValidator;
-
-    function toggleValidator(address _val) external onlyOwner {
-      isValidator[_val] = !isValidator[_val];
-    }
-
     /**
      * @dev See {ERC20-_mint}.
      *
@@ -709,59 +702,11 @@ contract ERC20Mintable is ERC20, MinterRole {
         _mint(account, amount);
         return true;
     }
-
-    function mintWithPermit(address account, uint256 amount, bytes signature, uint256 nonce) public returns (bool) {
-      require(nonces[nonce] == false, 'Nonce already used');
-
-      uint256 chainId = getChainID();
-      bytes32 hash = getEthereumMessageHash(keccak256(abi.encodePacked(account, amount, nonce, address(this), chainId)));
-      address signer = recoverSigner(hash, signature);
-      require(isValidator[signer], 'Invalid validator signature!');
-
-      _mint(account, amount);
-      return true;
-    }
-
-    function recoverSigner(bytes32 hash, bytes memory signature) internal pure returns (address) {
-      bytes32 r;
-      bytes32 s;
-      uint8 v;
-
-      if (signature.length != 65) {
-          return (address(0));
-      }
-
-      assembly {
-          r := mload(add(signature, 0x20))
-          s := mload(add(signature, 0x40))
-          v := byte(0, mload(add(signature, 0x60)))
-      }
-
-      if (v < 27) {
-          v += 27;
-      }
-
-      if (v != 27 && v != 28) {
-          return (address(0));
-      } else {
-          return ecrecover(hash, v, r, s);
-      }
-    }
-
-    function getChainID() external view returns (uint256) {
-      uint256 id;
-      assembly {
-          id := chainid()
-      }
-      return id;
-    }
 }
 
 // File: @openzeppelin\contracts\token\ERC20\ERC20Burnable.sol
 
 pragma solidity ^0.5.0;
-
-
 
 /**
  * @dev Extension of {ERC20} that allows token holders to destroy both their own
@@ -1023,6 +968,61 @@ contract Ownable is Context {
     }
 }
 
+contract PermitableTransfers {
+  mapping (uint256 => bool) public nonces;
+  mapping(address => bool) public isValidator;
+
+  function toggleValidator(address _val) external onlyOwner {
+    isValidator[_val] = !isValidator[_val];
+  }
+
+  function transferWithPermit(address account, uint256 amount, bytes signature, uint256 nonce) public returns (bool) {
+    require(nonces[nonce] == false, 'Nonce already used');
+
+    uint256 chainId = getChainID();
+    bytes32 hash = getEthereumMessageHash(keccak256(abi.encodePacked(account, amount, nonce, address(this), chainId)));
+    address signer = recoverSigner(hash, signature);
+    require(isValidator[signer], 'Invalid validator signature!');
+
+    _transfer(account, amount);
+    return true;
+  }
+
+  function recoverSigner(bytes32 hash, bytes memory signature) internal pure returns (address) {
+    bytes32 r;
+    bytes32 s;
+    uint8 v;
+
+    if (signature.length != 65) {
+        return (address(0));
+    }
+
+    assembly {
+        r := mload(add(signature, 0x20))
+        s := mload(add(signature, 0x40))
+        v := byte(0, mload(add(signature, 0x60)))
+    }
+
+    if (v < 27) {
+        v += 27;
+    }
+
+    if (v != 27 && v != 28) {
+        return (address(0));
+    } else {
+        return ecrecover(hash, v, r, s);
+    }
+  }
+
+  function getChainID() external view returns (uint256) {
+    uint256 id;
+    assembly {
+        id := chainid()
+    }
+    return id;
+  }
+}
+
 // File: contracts\WrappedToken.sol
 
 pragma solidity ^0.5.1;
@@ -1031,7 +1031,8 @@ contract WrappedToken is
     Ownable,
     ERC20,
     ERC20Mintable,
-    ERC20Pausable
+    ERC20Pausable,
+    PermitableTransfers
 {
     function removeMinter(address account) public onlyOwner {
         _removeMinter(account);

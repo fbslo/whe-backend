@@ -16,33 +16,37 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
     let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
-    let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
     amount = parseFloat(amount - (process.env.FIXED_FEE * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION))).toFixed(0); //remove fixed fee of 1 token
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
 
       let sigNonce = await getSignatureNonce();
-      let signature = await prepareSignature(address, amount, sigNonce);
+      let signatureMint = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
+      let from = process.env.ETHEREUM_ADDRESS
+      let chainID = process.env.CHAIN_ID
 
-      let contractFunction = contract.methods["mintWithPermit"](address, amount, signature, sigNonce).encodeABI();
-      let rawTransaction = {
-        "from": process.env.ETHEREUM_ADDRESS,
-        "nonce": "0x" + nonce.toString(16),
-        "gasPrice": web3.utils.toHex(gasPrice * 1e9),
-        "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
-        "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
-        "data": contractFunction,
-        "chainId": process.env.ETHEREUM_CHAIN_ID
-      };
-      let tx = new Tx(rawTransaction, { chain: process.env.ETHEREUM_CHAIN });
-      tx.sign(new Buffer.from(process.env.ETHEREUM_PRIVATE_KEY, 'hex'));
-      let serializedTx = tx.serialize();
-      let receipt = await web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
-      let { transactionHash, gasUsed, status } = receipt
+      let contractFunction = contract.methods["transferWithPermit"](from, address, amount, signatureMint, sigNonce).encodeABI();
+      const tx = {
+        to: process.env.ETHEREUM_CONTRACT_ADDRESS,
+        data: contractFunction,
+        gas: process.env.ETHEREUM_GAS_LIMIT,
+        schedule: 'fast'
+      }
 
+      const itx = new ethers.providers.InfuraProvider(
+        'polygon',
+        process.env.INFURA_ENDPOINT
+      )
+      const signer = new ethers.Wallet(process.env.ETHEREUM_PRIVATE_KEY, itx)
+      const signature = await signRequest(tx)
+      const relayTransactionHash = await itx.send('relay_sendTransaction', [
+        tx,
+        signature
+      ])
+      console.log(`ITX relay hash: ${relayTransactionHash}`)
 
-      sendDepositConfirmation(transactionHash, sender, depositTransaction)
+      sendDepositConfirmation(relayTransactionHash, sender, depositTransaction)
     }
   } catch(e){
     let details  = {
@@ -61,6 +65,16 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
+}
+
+async function signRequest(tx) {
+  const relayTransactionHash = ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      ['address', 'bytes', 'uint', 'uint', 'string'],
+      [tx.to, tx.data, tx.gas, 137, tx.schedule]
+    )
+  )
+  return await signer.signMessage(ethers.utils.arrayify(relayTransactionHash))
 }
 
 async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
@@ -93,9 +107,9 @@ async function refundFailedTransaction(depositAmount, sender, message){
   let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
 }
 
-function prepareSignature(to, amount, nonce){
-  return new Promis((resolve, reject) => {
-    let msgHash = await web3.utils.soliditySha3(to, amount, nonce, process.env.ETHEREUM_CONTRACT_ADDRESS, process.env.CHAIN_ID);
+function prepareSignature(from, to, amount, nonce){
+  return new Promise(async (resolve, reject) => {
+    let msgHash = await web3.utils.soliditySha3(from, to, amount, nonce, process.env.ETHEREUM_CONTRACT_ADDRESS, process.env.CHAIN_ID);
     let msgParams = {
       data: msgHash
     }
@@ -109,7 +123,11 @@ function prepareSignature(to, amount, nonce){
 
 async function getSignatureNonce(nonce){
   return new Promise(async (resolve, reject) => {
-    database.collection("signature_nonce").findOne({ name: latesNonce }, (err, result) => {
+    database.collection("signature_nonces").findAndModify({
+      query: {type: "latestNonce"},
+      update: {$inc: {count: 1}},
+      new: false
+    }, (err, result) =>{
       if (err) reject(err)
       else if (result == undefined) resolve(false)
       else resolve(result.nonce)
