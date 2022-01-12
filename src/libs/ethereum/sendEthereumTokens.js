@@ -126,10 +126,9 @@ function prepareSignature(from, to, amount, nonce){
 
 async function getSignatureNonce(nonce){
   return new Promise(async (resolve, reject) => {
-    database.collection("signature_nonces").findAndModify({
+    database.collection("signature_nonces").findOneAndUpdate({
       query: {type: "latestNonce"},
-      update: {$inc: {count: 1}},
-      new: false
+      update: {$inc: {count: 1}}
     }, (err, result) =>{
       if (err) reject(err)
       else if (result == undefined) resolve(false)
