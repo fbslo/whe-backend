@@ -112,7 +112,6 @@ async function refundFailedTransaction(depositAmount, sender, message){
 
 function prepareSignature(from, to, amount, nonce){
   return new Promise(async (resolve, reject) => {
-    console.log(from, to, amount, nonce, process.env.ETHEREUM_CONTRACT_ADDRESS, process.env.CHAIN_ID)
     let msgHash = await web3.utils.soliditySha3(from, to, amount, nonce, process.env.ETHEREUM_CONTRACT_ADDRESS, process.env.CHAIN_ID);
     let msgParams = {
       data: msgHash
@@ -132,6 +131,7 @@ async function getSignatureNonce(nonce){
       {$inc: {count: 1}},
       { new: false }
     , (err, result) =>{
+      console.log(err, result)
       if (err) reject(err)
       else if (result == undefined) resolve(false)
       else resolve(result.nonce)
