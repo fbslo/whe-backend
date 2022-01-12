@@ -17,6 +17,7 @@ async function databaseSetup(){
   await createCollections(collections);
   await updateState()
   await updateLastBlock()
+  await updateSignatureNonce()
   return;
 }
 
