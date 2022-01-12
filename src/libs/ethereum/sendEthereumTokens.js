@@ -22,11 +22,11 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     } else {
 
       let sigNonce = await getSignatureNonce();
-      let signatureMint = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
+      let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
 
-      let contractFunction = contract.methods["transferWithPermit"](from, address, amount, signatureMint, sigNonce).encodeABI();
+      let contractFunction = contract.methods["transferWithPermit"](from, address, amount, signatureTransfer, sigNonce).encodeABI();
       const tx = {
         to: process.env.ETHEREUM_CONTRACT_ADDRESS,
         data: contractFunction,
