@@ -39,7 +39,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
       const itx = new ethers.providers.InfuraProvider(
         137,
-        process.env.INFURA_ENDPOINT
+        process.env.INFURA_ID
       )
       const signer = new ethers.Wallet(process.env.ETHEREUM_PRIVATE_KEY, itx)
       const signature = await signRequest(tx, signer)
