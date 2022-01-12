@@ -19,7 +19,6 @@ assert(!process.env.HIVE_ACCOUNT.includes("@"), "HIVE_ACCOUNT should not include
 assert(process.env.PERCENTAGE_DEPOSIT_FEE >= 0, "PERCENTAGE_DEPOSIT_FEE must be more or equal to 0")
 assert(process.env.HIVE_TOKEN_PRECISION >= 0, "HIVE_TOKEN_PRECISION must be more or equal to 0")
 assert(process.env.ETHEREUM_TOKEN_PRECISION >= 0, "ETHEREUM_TOKEN_PRECISION must be more or equal to 0")
-assert(methods.includes(process.env.ETHEREUM_CONTRACT_FUNCTION), "ETHEREUM_CONTRACT_FUNCTION must be transfer or mint")
 
 const alreadyProcessed = []
 
@@ -33,7 +32,7 @@ async function main(){
   const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
 
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
-  console.log(`Wrapped Hive Engine Orace\nCopyright: @fbslo, 2020\n`)
+  console.log(`Wrapped Hive Engine Orace\nCopyright: @fbslo, 2022\n`)
   console.log(`Token Symbol: ${process.env.TOKEN_SYMBOL}\nHive account: ${process.env.HIVE_ACCOUNT}\nEthereum contract: ${process.env.ETHEREUM_CONTRACT_ADDRESS}`)
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
 
