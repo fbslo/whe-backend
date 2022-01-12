@@ -131,10 +131,9 @@ async function getSignatureNonce(nonce){
       {$inc: {count: 1}},
       { new: false }
     , (err, result) =>{
-      console.log(err, result)
       if (err) reject(err)
       else if (result == undefined) resolve(false)
-      else resolve(result.nonce)
+      else resolve(result.value.nonce)
     })
   })
 }
