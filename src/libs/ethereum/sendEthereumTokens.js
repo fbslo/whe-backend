@@ -38,11 +38,11 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       }
 
       const itx = new ethers.providers.InfuraProvider(
-        'polygon',
+        137,
         process.env.INFURA_ENDPOINT
       )
       const signer = new ethers.Wallet(process.env.ETHEREUM_PRIVATE_KEY, itx)
-      const signature = await signRequest(tx)
+      const signature = await signRequest(tx, signer)
       const relayTransactionHash = await itx.send('relay_sendTransaction', [
         tx,
         signature
@@ -70,7 +70,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
   }
 }
 
-async function signRequest(tx) {
+async function signRequest(tx, signer) {
   const relayTransactionHash = ethers.utils.keccak256(
     ethers.utils.defaultAbiCoder.encode(
       ['address', 'bytes', 'uint', 'uint', 'string'],
