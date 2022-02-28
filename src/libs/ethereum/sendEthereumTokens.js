@@ -42,14 +42,36 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
         process.env.INFURA_ID
       )
       const signer = new ethers.Wallet(process.env.ETHEREUM_PRIVATE_KEY, itx)
-      const signature = await signRequest(tx, signer)
-      const relayTransactionHash = await itx.send('relay_sendTransaction', [
-        tx,
-        signature
-      ])
-      console.log(`ITX relay hash: ${relayTransactionHash}`)
 
-      sendDepositConfirmation(relayTransactionHash, sender, depositTransaction)
+      let { balance } = await itx.send('relay_getBalance', [signer.address])
+
+      if (balance > 10000000000000000){ //0.01 MATIC, required to send tx
+        const signature = await signRequest(tx, signer)
+        const relayTransactionHash = await itx.send('relay_sendTransaction', [
+          tx,
+          signature
+        ])
+        console.log(`ITX relay hash: ${relayTransactionHash}`)
+
+        sendDepositConfirmation(relayTransactionHash, sender, depositTransaction)
+      } else {
+        //send normal transaction
+        let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+        let gasPrice = await getGasPrice();
+        let rawTransaction = {
+          "from": process.env.ETHEREUM_ADDRESS,
+          "nonce": "0x" + nonce.toString(16),
+          "gasPrice": web3.utils.toHex(gasPrice * 1e9),
+          "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
+          "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
+          "data": contractFunction,
+          "chainId": process.env.ETHEREUM_CHAIN_ID
+        };
+        let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
+        let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
+        let { transactionHash, gasUsed, status } = receipt
+        sendDepositConfirmation(transactionHash, sender, depositTransactionHash)
+      }
     }
   } catch(e){
     let details  = {
@@ -68,6 +90,19 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
+}
+
+function getGasPrice(){
+  return new Promise((resolve, reject) => {
+    axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
+      .then((res) => {
+        resolve(Number(res.data.result.ProposeGasPrice))
+      })
+    .catch((e) => {
+      console.log(`Error getting polygon gas price: ${e}`)
+      resolve(100)
+    })
+  })
 }
 
 async function signRequest(tx, signer) {
