@@ -32,7 +32,7 @@ async function main(){
   const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
 
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
-  console.log(`Wrapped Hive Engine Orace\nCopyright: @fbslo, 2022\n`)
+  console.log(`Wrapped Hive Engine Oracle\nCopyright: @fbslo, 2022\n`)
   console.log(`Token Symbol: ${process.env.TOKEN_SYMBOL}\nHive account: ${process.env.HIVE_ACCOUNT}\nEthereum contract: ${process.env.ETHEREUM_CONTRACT_ADDRESS}`)
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
 
