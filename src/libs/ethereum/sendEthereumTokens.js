@@ -84,6 +84,10 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       console.log(`Error while sending ERC-20 token (out of gas), refunded: ${e}, details: ${JSON.stringify(details)}`)
       logger.log('error', `Error while sending ERC-20 token (out of gas), refunded: ${e}, details: ${JSON.stringify(details)}`)
       refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request, details: Not enough ETH for gas cost')
+    } else  if ((e).toString().includes("Transaction has been reverted by the EVM:")){
+      console.log(`Error while sending ERC-20 token (EVM reverted), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      logger.log('error', `Error while sending ERC-20 token (EVM reverted), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request, details: Transaction has been reverted by the EVM')
     } else {
       console.log(`Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
       logger.log('error', `Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
