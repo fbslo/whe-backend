@@ -24,7 +24,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
 
-      let sigNonce = await contract.methods.nonce(process.env.ETHEREUM_ADDRESS); //get nonce on-chain
+      let sigNonce = new Date().getTime() //Nonce doesn't have to be in order, just unique
       let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
