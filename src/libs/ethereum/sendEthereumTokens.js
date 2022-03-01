@@ -45,7 +45,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
       let { balance } = await itx.send('relay_getBalance', [signer.address])
 
-      if (balance > 10000000000000000){ //0.01 MATIC, required to send tx
+      if (balance > 10000000000000000 && process.env.ITX_ENABLED == 'true'){ //0.01 MATIC, required to send tx
         const signature = await signRequest(tx, signer)
         const { relayTransactionHash } = await itx.send('relay_sendTransaction', [
           tx,
