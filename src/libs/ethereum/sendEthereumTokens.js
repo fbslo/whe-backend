@@ -70,7 +70,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
         let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
         let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
         let { transactionHash, gasUsed, status } = receipt
-        sendDepositConfirmation(transactionHash, sender, depositTransactionHash)
+        sendDepositConfirmation(transactionHash, sender, depositTransaction)
       }
     }
   } catch(e){
