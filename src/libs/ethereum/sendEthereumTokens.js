@@ -24,7 +24,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
 
-      let sigNonce = await getSignatureNonce();
+      let sigNonce = await contract.methods.nonce(process.env.ETHEREUM_ADDRESS); //get nonce on-chain
       let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
@@ -160,20 +160,6 @@ function prepareSignature(from, to, amount, nonce){
 
     let signature = await sigUtil.personalSign(ethers.utils.arrayify(process.env.ETHEREUM_PRIVATE_KEY), msgParams)
     resolve(signature);
-  })
-}
-
-async function getSignatureNonce(nonce){
-  return new Promise(async (resolve, reject) => {
-    database.collection("signature_nonces").findOneAndUpdate(
-      {type: "latestNonce"},
-      {$inc: {count: 1}},
-      { new: false }
-    , (err, result) =>{
-      if (err) reject(err)
-      else if (result == undefined) resolve(false)
-      else resolve(result.value.nonce)
-    })
   })
 }
 
