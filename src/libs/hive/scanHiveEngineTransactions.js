@@ -1,5 +1,5 @@
-const { HiveEngine } = require("@splinterlands/hive-interface")
-const hive_engine = new HiveEngine();
+const { HiveEngine, Hive } = require("@splinterlands/hive-interface")
+const hive = new Hive();
 
 const axios = require('axios');
 
@@ -10,26 +10,30 @@ let alreadyProcessed = []
 
 function start(callback){
   try {
-   hive_engine.stream(async (tx) => {
-     let { transactionId, sender, contract, action, payload, logs } = tx
-     payload = JSON.parse(payload)
-     if (contract === "tokens" &&
-         action === "transfer" &&
-         payload.symbol === process.env.TOKEN_SYMBOL &&
-         payload.to === process.env.HIVE_ACCOUNT
-     ){
-       let txHash = tx.transactionId.split("-")[0]
-       if (!alreadyProcessed.includes(txHash)){
-         alreadyProcessed.push(txHash)
-         if (process.env.VERIFY_SECONDARY_NODE === 'true'){
-           let isTransactionValid = await getSecondaryNodeInformation(transactionId, tx)
-           if (isTransactionValid === 'transaction_valid') callback(tx)
-         } else {
-           callback(tx)
-         }
-       }
-     }
-   });
+    hive.stream({
+      on_op: async (op, block_num, block_id, previous, transaction_id, block_time) => {
+        let operation = op[0]
+        let data = op[1]
+
+        if (operation === "transfer" ){
+          if (data.to == process.env.HIVE_ACCOUNT && data.amount.includes("HBD")){
+            if (!alreadyProcessed.includes(transaction_id)){
+              alreadyProcessed.push(transaction_id)
+              let tx = {
+                transactionId: transaction_id,
+                sender: data.from,
+                action: "transfer",
+                payload: {
+                  quantity: data.amount.split(" ")[0],
+                  memo: data.memo
+                }
+              }
+              callback(tx)
+            }
+          }
+        }
+      },
+    });
  } catch (e) {
    setTimeout(() => {
      start()

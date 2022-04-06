@@ -13,7 +13,7 @@ const isAlreadyProcessed = []
 function start(tx){
   return new Promise(async (resolve, reject) => {
     try {
-      let { transactionId, sender, contract, action, payload, logs } = tx
+      let { transactionId, sender, action, payload } = tx
       let isAlreadyInTheDatabase = await getTxFromDatabase(transactionId)
       payload = JSON.parse(payload)
       if (Number(payload.quantity) >= process.env.MIN_AMOUNT &&
@@ -30,15 +30,13 @@ function start(tx){
         if (!isAlreadyProcessed.includes(transactionId) && !isAlreadyInTheDatabase){
           isAlreadyProcessed.push(transactionId)
           pushToDatabase(transactionId)
-          let json = {
-            contractName: "tokens", contractAction: "transfer", contractPayload: {
-              symbol: process.env.TOKEN_SYMBOL,
-              to: sender,
-              quantity: payload.quantity,
-              memo: `Refund! Are you sure the amount is between ${process.env.MIN_AMOUNT} and ${process.env.MAX_AMOUNT} and memo is valid Ethereum address?`
-            }
-          }
-          let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
+          let transaction = await hive.transfer(
+            process.env.HIVE_ACCOUNT,
+            sender,
+            '0.001 HBD',
+            `Refund! Are you sure the amount is between ${process.env.MIN_AMOUNT} and ${process.env.MAX_AMOUNT} and memo is valid Ethereum address?`,
+            process.env.HIVE_ACCOUNT_PRIVATE_KEY
+          );
           resolve(`deposit_refunded`)
         }
       }
@@ -65,15 +63,13 @@ function pushToDatabase(transactionId){
 }
 
 async function transfer(username, amount, hash){
-  let json = {
-    contractName: "tokens", contractAction: "transfer", contractPayload: {
-      symbol: process.env.TOKEN_SYMBOL,
-      to: username,
-      quantity: parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION),
-      memo: `${parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION)} ${process.env.TOKEN_SYMBOL} converted! Transaction hash: ${hash}`
-    }
-  }
-  let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
+  let transaction = await hive.transfer(
+    process.env.HIVE_ACCOUNT,
+    username,
+    parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION) + ' HBD',
+    `${parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION)} ${process.env.TOKEN_SYMBOL} converted! Transaction hash: ${hash}`,
+    process.env.HIVE_ACCOUNT_PRIVATE_KEY
+  );
 }
 
 module.exports.start = start
