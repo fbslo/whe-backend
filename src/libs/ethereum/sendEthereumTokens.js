@@ -126,27 +126,23 @@ async function sendDepositConfirmation(transactionHash, sender, depositTransacti
   } else {
     memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
   }
-  let json = {
-    contractName: "tokens", contractAction: "transfer", contractPayload: {
-      symbol: process.env.TOKEN_SYMBOL,
-      to: sender,
-      quantity: Math.pow(10, -(process.env.HIVE_TOKEN_PRECISION)).toString(),
-      memo: memo
-    }
-  }
-  let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
+  let transaction = await hive.transfer(
+    process.env.HIVE_ACCOUNT,
+    sender,
+    '0.001 HBD',
+    `${parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION)} ${process.env.TOKEN_SYMBOL} converted! Transaction hash: ${hash}`,
+    process.env.HIVE_ACCOUNT_PRIVATE_KEY
+  );
 }
 
 async function refundFailedTransaction(depositAmount, sender, message){
-  let json = {
-    contractName: "tokens", contractAction: "transfer", contractPayload: {
-      symbol: process.env.TOKEN_SYMBOL,
-      to: sender,
-      quantity: depositAmount.toString(),
-      memo: `Refund! ${message}.`
-    }
-  }
-  let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
+  let transaction = await hive.transfer(
+    process.env.HIVE_ACCOUNT,
+    sender,
+    depositAmount + ' HBD',
+    `Refund! ${message}.`,
+    process.env.HIVE_ACCOUNT_PRIVATE_KEY
+  );
 }
 
 function prepareSignature(from, to, amount, nonce){

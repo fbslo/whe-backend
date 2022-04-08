@@ -33,7 +33,7 @@ function start(tx){
           let transaction = await hive.transfer(
             process.env.HIVE_ACCOUNT,
             sender,
-            '0.001 HBD',
+            payload.quantity + ' HBD',
             `Refund! Are you sure the amount is between ${process.env.MIN_AMOUNT} and ${process.env.MAX_AMOUNT} and memo is valid Ethereum address?`,
             process.env.HIVE_ACCOUNT_PRIVATE_KEY
           );
