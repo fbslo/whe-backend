@@ -130,7 +130,7 @@ async function sendDepositConfirmation(transactionHash, sender, depositTransacti
     process.env.HIVE_ACCOUNT,
     sender,
     '0.001 HBD',
-    `${parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION)} ${process.env.TOKEN_SYMBOL} converted! Transaction hash: ${hash}`,
+    memo,
     process.env.HIVE_ACCOUNT_PRIVATE_KEY
   );
 }
