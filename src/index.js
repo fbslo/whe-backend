@@ -27,9 +27,9 @@ async function main(){
   const processHiveEngineDeposit = require("./libs/hive/processHiveEngineDeposit.js");
   const mempool = require("./libs/hive/mempool.js")
 
-  // const scanEthereumTransactions = require("./libs/ethereum/scanEthereumTransactions.js")
-  // const processEthereumTransaction = require("./libs/ethereum/processEthereumTransaction.js")
-  // const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
+  const scanEthereumTransactions = require("./libs/ethereum/scanEthereumTransactions.js")
+  const processEthereumTransaction = require("./libs/ethereum/processEthereumTransaction.js")
+  const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
 
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
   console.log(`Wrapped Hive Engine Oracle\nCopyright: @fbslo, 2022\n`)
@@ -42,9 +42,9 @@ async function main(){
       .then(async (result) => {
         if (result === 'deposit_refunded') console.log(`Invalid deposit transaction ${tx.transactionId} by ${tx.sender} refunded!`)
         else if (result === 'valid_deposit') {
-          let payload = JSON.parse(tx.payload)
+          let payload = tx.payload
           console.log(`New HE deposit detected! ${payload.quantity} ${process.env.TOKEN_SYMBOL} sent by ${tx.sender}`)
-          // sendEthereumTokens.start(payload.quantity, payload.memo, tx.sender, logger, tx.transactionId)
+          sendEthereumTokens.start(payload.quantity, payload.memo, tx.sender, logger, tx.transactionId)
         }
       })
       .catch((err) => {
@@ -53,22 +53,22 @@ async function main(){
       })
   })
 
-  //check for new ERC20 deposits every minute
-  // schedule.scheduleJob('* * * * *', () => {
-  //   scanEthereumTransactions.start((tx) => {
-  //     processEthereumTransaction.start(tx)
-  //       .then((result) => {
-  //         if (!alreadyProcessed.includes(result.hash)){
-  //           alreadyProcessed.push(result.hash) //prevent double spend
-  //           processHiveEngineDeposit.transfer(result.username, result.amount, result.hash)
-  //         }
-  //       })
-  //       .catch((err) => {
-  //         console.log(`[!] Error while processing Ethereum transaction:`, err)
-  //         logger.log('error', `Error while processing Ethereum transaction: ${err}`)
-  //       })
-  //   })
-  // })
+  check for new ERC20 deposits every minute
+  schedule.scheduleJob('* * * * *', () => {
+    scanEthereumTransactions.start((tx) => {
+      processEthereumTransaction.start(tx)
+        .then((result) => {
+          if (!alreadyProcessed.includes(result.hash)){
+            alreadyProcessed.push(result.hash) //prevent double spend
+            processHiveEngineDeposit.transfer(result.username, result.amount, result.hash)
+          }
+        })
+        .catch((err) => {
+          console.log(`[!] Error while processing Ethereum transaction:`, err)
+          logger.log('error', `Error while processing Ethereum transaction: ${err}`)
+        })
+    })
+  })
 
   //highly experimental, don't use in production yet
   if (process.env.VERIFY_SECONDARY_NODE === 'true'){
