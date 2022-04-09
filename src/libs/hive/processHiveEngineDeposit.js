@@ -15,12 +15,11 @@ function start(tx){
     try {
       let { transactionId, sender, action, payload } = tx
       let isAlreadyInTheDatabase = await getTxFromDatabase(transactionId)
-      payload = JSON.parse(payload)
+
       if (Number(payload.quantity) >= process.env.MIN_AMOUNT &&
           Number(payload.quantity) <= process.env.MAX_AMOUNT &&
           web3.utils.isAddress(payload.memo) &&
           !isAlreadyProcessed.includes(transactionId) &&
-          !logs.includes("error") &&
           !isAlreadyInTheDatabase
       ){
         isAlreadyProcessed.push(transactionId)
