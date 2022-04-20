@@ -4,6 +4,10 @@ Copyright: @fbslo, 2020
 
 ---
 
+This code is free, open-source, feel free to use it however you like, but it's not actively actively maintained. It might contain bugs, security issues, outdated dependencies... 
+
+---
+
 This repo includes source code for ***backend*** of Wrapped Hive Engine (wHE) token oracle.
 
 ---
