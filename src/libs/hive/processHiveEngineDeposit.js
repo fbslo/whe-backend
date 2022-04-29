@@ -32,7 +32,7 @@ function start(tx){
           let transaction = await hive.transfer(
             process.env.HIVE_ACCOUNT,
             sender,
-            payload.quantity + ' HBD',
+            payload.quantity + ' HIVE',
             `Refund! Are you sure the amount is between ${process.env.MIN_AMOUNT} and ${process.env.MAX_AMOUNT} and memo is valid Ethereum address?`,
             process.env.HIVE_ACCOUNT_PRIVATE_KEY
           );
@@ -65,7 +65,7 @@ async function transfer(username, amount, hash){
   let transaction = await hive.transfer(
     process.env.HIVE_ACCOUNT,
     username,
-    parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION) + ' HBD',
+    parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION) + ' HIVE',
     `${parseFloat(amount).toFixed(process.env.HIVE_TOKEN_PRECISION)} ${process.env.TOKEN_SYMBOL} converted! Transaction hash: ${hash}`,
     process.env.HIVE_ACCOUNT_PRIVATE_KEY
   );

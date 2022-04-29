@@ -16,7 +16,7 @@ function start(callback){
         let data = op[1]
 
         if (operation === "transfer" ){
-          if (data.to == process.env.HIVE_ACCOUNT && data.amount.includes("HBD")){
+          if (data.to == process.env.HIVE_ACCOUNT && data.amount.includes("HIVE")){
             if (!alreadyProcessed.includes(transaction_id)){
               alreadyProcessed.push(transaction_id)
               let tx = {
