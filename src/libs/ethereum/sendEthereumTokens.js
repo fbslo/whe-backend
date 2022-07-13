@@ -45,7 +45,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
       let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
 
-      await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, address: address, amount: depositAmount, time: new Date().getTime(), data: contractFunction })
+      await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, time: new Date().getTime(), data: contractFunction })
 
       try {
         let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
