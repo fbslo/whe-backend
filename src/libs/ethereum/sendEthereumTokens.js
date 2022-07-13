@@ -29,49 +29,32 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
 
-      let contractFunction = contract.methods["transferWithPermit"](from, address, amount, signatureTransfer, sigNonce).encodeABI();
-      const tx = {
-        to: process.env.ETHEREUM_CONTRACT_ADDRESS,
-        data: contractFunction,
-        gas: process.env.ETHEREUM_GAS_LIMIT,
-        schedule: 'fast'
-      }
+      let contractFunction = contract.methods["transfer"](address, amount).encodeABI();
+      //send normal transaction
+      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+      let gasPrice = await getGasPrice();
+      let rawTransaction = {
+        "from": process.env.ETHEREUM_ADDRESS,
+        "nonce": "0x" + nonce.toString(16),
+        "gasPrice": web3.utils.toHex(gasPrice * 1e9),
+        "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
+        "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
+        "data": contractFunction,
+        "chainId": process.env.ETHEREUM_CHAIN_ID
+      };
+      let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
+      let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
 
-      const itx = new ethers.providers.InfuraProvider(
-        137,
-        process.env.INFURA_ID
-      )
-      const signer = new ethers.Wallet(process.env.ETHEREUM_PRIVATE_KEY, itx)
+      await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, address: address, amount: depositAmount, time: new Date().getTime(), data: contractFunction })
 
-      let { balance } = await itx.send('relay_getBalance', [signer.address])
-
-      if (balance > 10000000000000000 && process.env.ITX_ENABLED == 'true'){ //0.01 MATIC, required to send tx
-        const signature = await signRequest(tx, signer)
-        const { relayTransactionHash } = await itx.send('relay_sendTransaction', [
-          tx,
-          signature
-        ])
-        console.log(`ITX relay hash: ${relayTransactionHash}`)
-
-        sendDepositConfirmation(relayTransactionHash, sender, depositTransaction)
-      } else {
-        //send normal transaction
-        let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
-        let gasPrice = await getGasPrice();
-        let rawTransaction = {
-          "from": process.env.ETHEREUM_ADDRESS,
-          "nonce": "0x" + nonce.toString(16),
-          "gasPrice": web3.utils.toHex(gasPrice * 1e9),
-          "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
-          "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
-          "data": contractFunction,
-          "chainId": process.env.ETHEREUM_CHAIN_ID
-        };
-        let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
+      try {
         let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
-        let { transactionHash, gasUsed, status } = receipt
-        sendDepositConfirmation(transactionHash, sender, depositTransaction)
+      } catch (e){
+        console.log(`Error sending signed transaction: ${e}`)
       }
+
+      sendDepositConfirmation(txHash, sender, depositTransaction)
+
     }
   } catch(e){
     let details  = {
@@ -98,7 +81,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
 function getGasPrice(){
   return new Promise((resolve, reject) => {
-    axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
+    axios.get("https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
       .then((res) => {
         resolve(Number(res.data.result.ProposeGasPrice))
       })
@@ -107,16 +90,6 @@ function getGasPrice(){
       resolve(100)
     })
   })
-}
-
-async function signRequest(tx, signer) {
-  const relayTransactionHash = ethers.utils.keccak256(
-    ethers.utils.defaultAbiCoder.encode(
-      ['address', 'bytes', 'uint', 'uint', 'string'],
-      [tx.to, tx.data, tx.gas, 137, tx.schedule]
-    )
-  )
-  return await signer.signMessage(ethers.utils.arrayify(relayTransactionHash))
 }
 
 async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
@@ -143,20 +116,6 @@ async function refundFailedTransaction(depositAmount, sender, message){
     `Refund! ${message}.`,
     process.env.HIVE_ACCOUNT_PRIVATE_KEY
   );
-}
-
-function prepareSignature(from, to, amount, nonce){
-  return new Promise(async (resolve, reject) => {
-    let msgHash = await web3.utils.soliditySha3(from, to, amount, nonce, process.env.ETHEREUM_CONTRACT_ADDRESS, process.env.CHAIN_ID);
-    let msgParams = {
-      data: msgHash
-    }
-
-    if (!process.env.ETHEREUM_PRIVATE_KEY.startsWith('0x')) process.env.ETHEREUM_PRIVATE_KEY = '0x' + process.env.ETHEREUM_PRIVATE_KEY
-
-    let signature = await sigUtil.personalSign(ethers.utils.arrayify(process.env.ETHEREUM_PRIVATE_KEY), msgParams)
-    resolve(signature);
-  })
 }
 
 module.exports.start = start
