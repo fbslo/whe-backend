@@ -17,9 +17,7 @@ const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 async function start(depositAmount, address, sender, logger, depositTransaction){
   try {
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
-    console.log(amount)
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
-    console.log(amount)
     let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
     amount = parseFloat(amount - (process.env.FIXED_FEE * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION))).toFixed(0); //remove fixed fee of 1 token
     if (amount <= 0){ //if amount is less than 0, refund
@@ -47,13 +45,13 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
       await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, time: new Date().getTime(), data: contractFunction })
 
+      sendDepositConfirmation(txHash, sender, depositTransaction)
+
       try {
         let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
       } catch (e){
         console.log(`Error sending signed transaction: ${e}`)
       }
-
-      sendDepositConfirmation(txHash, sender, depositTransaction)
 
     }
   } catch(e){
