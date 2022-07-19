@@ -100,7 +100,7 @@ async function sendDepositConfirmation(transactionHash, sender, depositTransacti
   let transaction = await hive.transfer(
     process.env.HIVE_ACCOUNT,
     sender,
-    '0.001 HIVE',
+    '0.001 HBD',
     memo,
     process.env.HIVE_ACCOUNT_PRIVATE_KEY
   );
@@ -110,7 +110,7 @@ async function refundFailedTransaction(depositAmount, sender, message){
   let transaction = await hive.transfer(
     process.env.HIVE_ACCOUNT,
     sender,
-    depositAmount + ' HIVE',
+    depositAmount + ' HBD',
     `Refund! ${message}.`,
     process.env.HIVE_ACCOUNT_PRIVATE_KEY
   );
