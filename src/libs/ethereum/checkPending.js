@@ -17,8 +17,9 @@ async function checkPendingTransactions(){
     let txCount = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS)
     let status = await web3.eth.getTransactionReceipt(pending[i].transactionHash)
     if (status && status.toString().length > 1){
-      await storage.updateWithdrawal(pending[i].transactionHash, null);
-      await storage.reducePending(pending[i].user, pending[i].amount)
+      await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash },
+        {$set: { isPending: false, replacedBy: null } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
+      )
     } else {
       if (new Date().getTime() - pending[i].time > (30 * 60000)){
         //tx was not yet processed
