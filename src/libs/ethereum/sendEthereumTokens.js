@@ -48,7 +48,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       sendDepositConfirmation(txHash, sender, depositTransaction)
 
       try {
-        // let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
+        let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
       } catch (e){
         console.log(`Error sending signed transaction: ${e}`)
       }
