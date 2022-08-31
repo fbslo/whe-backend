@@ -84,7 +84,7 @@ function getGasPrice(){
   return new Promise((resolve, reject) => {
     axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
       .then((res) => {
-        resolve(Number(res.data.result.ProposeGasPrice))
+        resolve(Number(res.data.result.ProposeGasPrice) + 5)
       })
     .catch((e) => {
       console.log(`Error getting polygon gas price: ${e}`)

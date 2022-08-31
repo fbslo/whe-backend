@@ -24,7 +24,7 @@ async function checkPendingTransactions(){
       if (new Date().getTime() - pending[i].time > (30 * 60000)){
         //tx was not yet processed
         console.log(`Updating: ${pending[i].transactionHash}`)
-        let gasPrice = 10;
+        let gasPrice = await getGasPrice();
         let nonce = txCount > pending[i].nonce ? txCount : pending[i].nonce;
         let rawTransaction = {
           "from": process.env.ETHEREUM_ADDRESS,
@@ -60,6 +60,19 @@ async function checkPendingTransactions(){
       }
     }
   }
+}
+
+function getGasPrice(){
+  return new Promise((resolve, reject) => {
+    axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
+      .then((res) => {
+        resolve(Number(res.data.result.ProposeGasPrice) + 5)
+      })
+    .catch((e) => {
+      console.log(`Error getting polygon gas price: ${e}`)
+      resolve(100)
+    })
+  })
 }
 
 module.exports.checkPendingTransactions = checkPendingTransactions
