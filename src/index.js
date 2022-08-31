@@ -30,6 +30,7 @@ async function main(){
   const scanEthereumTransactions = require("./libs/ethereum/scanEthereumTransactions.js")
   const processEthereumTransaction = require("./libs/ethereum/processEthereumTransaction.js")
   const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
+  const checkPending = require("./libs/ethereum/checkPending.js")
 
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
   console.log(`Wrapped Hive Engine Oracle\nCopyright: @fbslo, 2022\n`)
@@ -69,6 +70,12 @@ async function main(){
         })
     })
   })
+
+  //check pending transactions every 5 minutes
+  schedule.scheduleJob("*/5 * * * *", () => {
+    checkPending.checkPendingTransactions()
+  })
+
 
   //highly experimental, don't use in production yet
   if (process.env.VERIFY_SECONDARY_NODE === 'true'){
