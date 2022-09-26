@@ -9,6 +9,9 @@ const hive = new Hive({rpc_error_limit: 5}, {rpc_nodes: process.env.HIVE_RPC_NOD
 const tokenABI = require("./tokenABI.js");
 const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
+const mongo = require("../../mongo.js")
+const database = mongo.get().db("oracle")
+
 async function start(depositAmount, address, sender, logger, depositTransactionHash){
   try {
     let gasPrice = await getRecomendedGasPrice()
@@ -16,9 +19,7 @@ async function start(depositAmount, address, sender, logger, depositTransactionH
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
     let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
     let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
-    // let hiveEngineTokenPriceInEther = await hiveEngineTokenPrice.start(); //get HE token price in ETH
-    // let estimatedGasFee = await caculateTransactionFee(contract, address, amount, gasPrice); //get estimated ETH used
-    // let estimatedTransactionFeeInHETokens = parseFloat(estimatedGasFee.etherValue / hiveEngineTokenPriceInEther * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)).toFixed(0)
+
     amount = parseFloat(amount - 1000).toFixed(0)
     if (amount <= 0){ //if amount is less than 1, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
@@ -33,18 +34,19 @@ async function start(depositAmount, address, sender, logger, depositTransactionH
         "data": contractFunction,
         "chainId": process.env.ETHEREUM_CHAIN_ID
       };
-      // let tx = new Tx(rawTransaction, { chain: process.env.ETHEREUM_CHAIN });
-      // tx.sign(new Buffer.from(process.env.ETHEREUM_PRIVATE_KEY, 'hex'));
       let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
-      // let serializedTx = tx.serialize();
-      let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
-      let { transactionHash, gasUsed, status } = receipt
+      let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
+
+      await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, time: new Date().getTime(), data: contractFunction })
+
       sendDepositConfirmation(transactionHash, sender, depositTransactionHash)
-      // if (gasUsed < estimatedGasFee.estimatedGas){ //refund any extra fees
-      //   let spendTransactionFeeInHETokens = parseFloat(gasUsed / hiveEngineTokenPriceInEther).toFixed(process.env.HIVE_TOKEN_PRECISION)
-      //   let extraFeeRefund = (estimatedTransactionFeeInHETokens / Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)) - spendTransactionFeeInHETokens
-      //   sendFeeRefund(parseFloat(extraFeeRefund).toFixed(process.env.HIVE_TOKEN_PRECISION), sender)
-      // }
+
+      try {
+        let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
+      } catch (e){
+        console.log(`Error sending signed transaction: ${e}`)
+      }
+
     }
   } catch(e){
     let details  = {
@@ -53,13 +55,18 @@ async function start(depositAmount, address, sender, logger, depositTransactionH
       sender: sender,
       time: new Date()
     }
-    if ((e).toString().includes("Transaction was not mined within 750 seconds")){
-      console.log(`Error (not minted within 750 seconds) NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
-      logger.log('error', `Error (not minted within 750 seconds) NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
+    if ((e).toString().includes("insufficient funds for gas * price + value")){
+      console.log(`Error while sending ERC-20 token (out of gas), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      logger.log('error', `Error while sending ERC-20 token (out of gas), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request, details: Not enough ETH for gas cost')
+    } else  if ((e).toString().includes("Transaction has been reverted by the EVM:")){
+      console.log(`Error while sending ERC-20 token (EVM reverted), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      logger.log('error', `Error while sending ERC-20 token (EVM reverted), refunded: ${e}, details: ${JSON.stringify(details)}`)
+      refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request, details: Transaction has been reverted by the EVM. Please try again!')
     } else {
-      console.log(`Error while sending ERC-20 token, refunded: ${e}, details: ${JSON.stringify(details)}`)
-      logger.log('error', `Error while sending ERC-20 token, refunded: ${e}, details: ${JSON.stringify(details)}`)
-      refundFailedTransaction(depositAmount, sender, 'Internal server error while processing your request')
+      console.log(`Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
+      logger.log('error', `Error NOT refunded: ${e}, details: ${JSON.stringify(details)}`)
+      refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
 }
