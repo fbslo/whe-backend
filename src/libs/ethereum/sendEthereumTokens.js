@@ -29,7 +29,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
       let contractFunction = contract.methods["transfer"](address, amount).encodeABI();
       //send normal transaction
-      let nonce = await getNonce()//await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
 
       let gasPrice = await getGasPrice();
       let rawTransaction = {
@@ -82,17 +82,17 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
   }
 }
 
-async function getNonce(){
-  return new Promise(async (resolve, reject) => {
-    let latestTx = await database.collection("pending_transactions").find().sort({nonce:-1}).limit(1).toArray()
-    if (!latestTx || latestTx.length == 0) {
-      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
-      resolve(nonce)
-    } else {
-      resolve(Number(latestTx[0].nonce) + 1)
-    }
-  })
-}
+// async function getNonce(){
+//   return new Promise(async (resolve, reject) => {
+//     let latestTx = await database.collection("pending_transactions").find().sort({nonce:-1}).limit(1).toArray()
+//     if (!latestTx || latestTx.length == 0) {
+//       let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+//       resolve(nonce)
+//     } else {
+//       resolve(Number(latestTx[0].nonce) + 1)
+//     }
+//   })
+// }
 
 function getGasPrice(){
   return new Promise((resolve, reject) => {
