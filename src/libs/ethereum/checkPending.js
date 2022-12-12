@@ -14,7 +14,7 @@ const database = mongo.get().db("oracle")
 async function checkPendingTransactions(){
   let pending = await (await database.collection("pending_transactions").find({ isPending: true })).toArray()
   for (let i in pending){
-    let txCount = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS)
+    // let txCount = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS)
     let status = await web3.eth.getTransactionReceipt(pending[i].transactionHash)
     if (status && status.toString().length > 1){
       await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash },
@@ -25,7 +25,7 @@ async function checkPendingTransactions(){
         //tx was not yet processed
         console.log(`Updating: ${pending[i].transactionHash}`)
         let gasPrice = 10;
-        let nonce = txCount > pending[i].nonce ? txCount : pending[i].nonce;
+        let nonce = pending[i].nonce //txCount > pending[i].nonce ? txCount : pending[i].nonce;
         let rawTransaction = {
           "from": process.env.ETHEREUM_ADDRESS,
           "nonce": "0x" + nonce.toString(16),
@@ -38,25 +38,27 @@ async function checkPendingTransactions(){
         let signedTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
         let txHash = await web3.utils.keccak256(signedTransaction.rawTransaction)
 
-        await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash }, {$set: { isPending: false, replacedBy: txHash } }, (err, res) => {
+        await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash }, {$set: { isPending: false, replacedBy: txHash } }, async (err, res) => {
           if (err) console.log(`Error updating pending transaction: ${err}`)
+          else {
+            await database.collection("pending_transactions").insertOne({
+              isPending: true,
+              transactionHash: txHash,
+              nonce: nonce,
+              sender: pending[i].sender,
+              time: new Date().getTime(),
+              data: pending[i].data
+           });
+
+            try {
+              let receipt = web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+              await new Promise(r => setTimeout(r, 10000));
+            } catch (e){
+              console.log(`Error sending signed transaction: ${e}`)
+            }
+          }
         })
 
-        await database.collection("pending_transactions").insertOne({
-          isPending: true,
-          transactionHash: txHash,
-          nonce: nonce,
-          sender: pending[i].sender,
-          time: new Date().getTime(),
-          data: pending[i].data
-       });
-
-        try {
-          let receipt = web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
-          await new Promise(r => setTimeout(r, 10000));
-        } catch (e){
-          console.log(`Error sending signed transaction: ${e}`)
-        }
       }
     }
   }
