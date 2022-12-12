@@ -38,7 +38,7 @@ async function checkPendingTransactions(){
         let signedTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
         let txHash = await web3.utils.keccak256(signedTransaction.rawTransaction)
 
-        await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash }, {$set: { isPending: false, replacedBy: txHash } }, (err, res) => {
+        await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash }, {$set: { isPending: false, replacedBy: txHash } }, async (err, res) => {
           if (err) console.log(`Error updating pending transaction: ${err}`)
           else {
             await database.collection("pending_transactions").insertOne({
@@ -59,6 +59,7 @@ async function checkPendingTransactions(){
            }
           }
         })
+        
       }
     }
   }
