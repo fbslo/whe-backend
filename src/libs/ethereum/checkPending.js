@@ -14,7 +14,7 @@ const database = mongo.get().db("oracle")
 async function checkPendingTransactions(){
   let pending = await (await database.collection("pending_transactions").find({ isPending: true })).toArray()
   for (let i in pending){
-    let txCount = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS)
+    // let txCount = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS)
     let status = await web3.eth.getTransactionReceipt(pending[i].transactionHash)
     if (status && status.toString().length > 1){
       await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash },
@@ -59,7 +59,7 @@ async function checkPendingTransactions(){
            }
           }
         })
-        
+
       }
     }
   }
