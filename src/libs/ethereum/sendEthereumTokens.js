@@ -29,7 +29,8 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
       let contractFunction = contract.methods["transfer"](address, amount).encodeABI();
       //send normal transaction
-      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+      let nonce = await getNonce()//await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+
       let gasPrice = await getGasPrice();
       let rawTransaction = {
         "from": process.env.ETHEREUM_ADDRESS,
@@ -75,6 +76,18 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
+}
+
+async function getNonce(){
+  return new Promise(async (resolve, reject) => {
+    let latestTx = await database.collection("pending_transactions").find().sort({nonce:-1}).limit(1).toArray()
+    if (!latestTx || latestTx.length == 0) {
+      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+      resolve(nonce)
+    } else {
+      resolve(Number(latestTx[0].nonce) + 1)
+    }
+  })
 }
 
 function getGasPrice(){
