@@ -82,8 +82,6 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
   }
 }
 
-getNonce()
-
 async function getNonce(){
   return new Promise(async (resolve, reject) => {
     let latestTx = await database.collection("pending_transactions").find().sort({nonce:-1}).limit(1).toArray()
