@@ -29,7 +29,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
 
       let contractFunction = contract.methods["transfer"](address, amount).encodeABI();
       //send normal transaction
-      let nonce = await getNonce()//await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
 
       let gasPrice = await getGasPrice();
       let rawTransaction = {
@@ -90,18 +90,18 @@ async function getNonce(){
   })
 }
 
-function getGasPrice(){
-  return new Promise((resolve, reject) => {
-    axios.get("https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
-      .then((res) => {
-        resolve(Number(res.data.result.ProposeGasPrice))
-      })
-    .catch((e) => {
-      console.log(`Error getting polygon gas price: ${e}`)
-      resolve(100)
-    })
-  })
-}
+// function getGasPrice(){
+//   return new Promise((resolve, reject) => {
+//     axios.get("https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
+//       .then((res) => {
+//         resolve(Number(res.data.result.ProposeGasPrice))
+//       })
+//     .catch((e) => {
+//       console.log(`Error getting polygon gas price: ${e}`)
+//       resolve(100)
+//     })
+//   })
+// }
 
 async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
   let memo;
