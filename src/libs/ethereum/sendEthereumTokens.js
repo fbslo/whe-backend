@@ -77,7 +77,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     }
   }
 }
-
+/*
 async function getNonce(){
   return new Promise(async (resolve, reject) => {
     let latestTx = await database.collection("pending_transactions").find().sort({nonce:-1}).limit(1).toArray()
@@ -89,19 +89,19 @@ async function getNonce(){
     }
   })
 }
-
-// function getGasPrice(){
-//   return new Promise((resolve, reject) => {
-//     axios.get("https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
-//       .then((res) => {
-//         resolve(Number(res.data.result.ProposeGasPrice))
-//       })
-//     .catch((e) => {
-//       console.log(`Error getting polygon gas price: ${e}`)
-//       resolve(100)
-//     })
-//   })
-// }
+*/
+ function getGasPrice(){
+   return new Promise((resolve, reject) => {
+     axios.get("https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
+       .then((res) => {
+         resolve(Number(res.data.result.ProposeGasPrice))
+       })
+     .catch((e) => {
+       console.log(`Error getting polygon gas price: ${e}`)
+       resolve(100)
+     })
+   })
+ }
 
 async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
   let memo;
