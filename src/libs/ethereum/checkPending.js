@@ -13,7 +13,7 @@ const database = mongo.get().db("oracle")
 
 async function checkPendingTransactions(){
   let pending = await (await database.collection("pending_transactions").find({ isPending: true })).toArray()
-  let proxyContractInteface = new web3.eth.Contract("./ProxyContractABI.json", process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS)
+  let proxyContractInteface = new web3.eth.Contract(require("./ProxyContractABI.json"), process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS)
 
   for (let i in pending){
     let getOnChainStatus = await proxyContractInteface.methods.usedIds(pending[i].id).call()

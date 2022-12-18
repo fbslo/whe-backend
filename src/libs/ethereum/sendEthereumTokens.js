@@ -14,7 +14,7 @@ const database = mongo.get().db("oracle")
 const tokenABI = require("./tokenABI.js");
 const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
-let proxyContractInteface = new Web3.eth.Contract("./ProxyContractABI.json", process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS)
+let proxyContractInteface = new web3.eth.Contract(require("./ProxyContractABI.json"), process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS)
 
 async function start(depositAmount, address, sender, logger, depositTransaction){
   try {
