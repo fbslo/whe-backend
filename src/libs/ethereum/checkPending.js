@@ -13,56 +13,48 @@ const database = mongo.get().db("oracle")
 
 async function checkPendingTransactions(){
   let pending = await (await database.collection("pending_transactions").find({ isPending: true })).toArray()
+  let proxyContractInteface = new Web3.eth.Contract("./ProxyContractABI.json", process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS)
+
   for (let i in pending){
-    // let txCount = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS)
-    let status = await web3.eth.getTransactionReceipt(pending[i].transactionHash)
-    if (status && status.toString().length > 1){
-      await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash },
-        {$set: { isPending: false, replacedBy: null } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
+    let getOnChainStatus = await proxyContractInteface.methods.usedIds(pending[i].id).call()
+
+    if (getOnChainStatus){
+      await database.collection("pending_transactions").updateOne({ id: pending[i].id },
+        {$set: { isPending: false, lastUpdate: new Date().getTime() } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
       )
-    } else if (status == null) {
-      if (new Date().getTime() - pending[i].time > (30 * 60000)){
-        //tx was not yet processed
-        console.log(`Updating: ${pending[i].transactionHash}`)
+    } else {
+      if (new Date().getTime() - pending[i].lastUpdate > (30 * 60000)){
+        console.log(`Updating: ${pending[i].id}`)
+        let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
         let gasPrice = Number(parseFloat(Number(pending[i].gasPrice) * 1.15).toFixed(3));
-        let nonce = pending[i].nonce //txCount > pending[i].nonce ? txCount : pending[i].nonce;
+
         let rawTransaction = {
           "from": process.env.ETHEREUM_ADDRESS,
           "nonce": "0x" + nonce.toString(16),
           "gasPrice": web3.utils.toHex(gasPrice * 1e9),
           "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
-          "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
+          "to": process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS,
           "data": pending[i].data,
           "chainId": process.env.ETHEREUM_CHAIN_ID
         };
         let signedTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
-        let txHash = await web3.utils.keccak256(signedTransaction.rawTransaction)
 
-        await database.collection("pending_transactions").updateOne({ transactionHash: pending[i].transactionHash }, {$set: { isPending: false, replacedBy: txHash } }, async (err, res) => {
-          if (err) console.log(`Error updating pending transaction: ${err}`)
-          else {
-            await database.collection("pending_transactions").insertOne({
-              isPending: true,
-              transactionHash: txHash,
-              nonce: nonce,
-              sender: pending[i].sender,
-              time: new Date().getTime(),
-              data: pending[i].data,
-              gasPrice: gasPrice
-           });
+        await database.collection("pending_transactions").updateOne({ id: pending[i].id },
+          {$set: { isPending: true, lastUpdate: new Date().getTime() } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
+        )
 
-           try {
-             let receipt = web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
-             await new Promise(r => setTimeout(r, 10000));
-           } catch (e){
-             console.log(`Error sending signed transaction: ${e}`)
-           }
-          }
-        })
-
+        try {
+          let receipt = web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+          await new Promise(r => setTimeout(r, 10000));
+        } catch (e){
+          console.log(`Error sending signed transaction: ${e}`)
+        }
       }
     }
   }
 }
 
+
+
 module.exports.checkPendingTransactions = checkPendingTransactions
+module.exports.runStartupCheck = runStartupCheck

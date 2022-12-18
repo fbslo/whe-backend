@@ -14,21 +14,23 @@ const database = mongo.get().db("oracle")
 const tokenABI = require("./tokenABI.js");
 const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
+let proxyContractInteface = new Web3.eth.Contract("./ProxyContractABI.json", process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS)
+
 async function start(depositAmount, address, sender, logger, depositTransaction){
   try {
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
-    let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
+    // let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
     amount = parseFloat(amount - (process.env.FIXED_FEE * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION))).toFixed(0); //remove fixed fee of 1 token
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
+      let id = await generateId()
 
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
 
-      let contractFunction = contract.methods["transfer"](address, amount).encodeABI();
-      //send normal transaction
+      let contractFunction = proxyContractInteface.methods["transfer"](process.env.ETHEREUM_CONTRACT_ADDRESS, address, amount, id).encodeABI();
       let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
 
       let gasPrice = await getGasPrice();
@@ -37,7 +39,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
         "nonce": "0x" + nonce.toString(16),
         "gasPrice": web3.utils.toHex(gasPrice * 1e9),
         "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
-        "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
+        "to": process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS,
         "data": contractFunction,
         "chainId": process.env.ETHEREUM_CHAIN_ID
       };
@@ -45,9 +47,10 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
 
       await database.collection("pending_transactions").insertOne({
+        id: id,
         isPending: true, transactionHash: txHash, nonce: nonce,
         sender: sender, time: new Date().getTime(), data: contractFunction,
-        gasPrice: gasPrice
+        gasPrice: gasPrice, lastUpdate: new Date().getTime()
       })
 
       sendDepositConfirmation(txHash, sender, depositTransaction)
@@ -82,17 +85,14 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
   }
 }
 
-// async function getNonce(){
-//   return new Promise(async (resolve, reject) => {
-//     let latestTx = await database.collection("pending_transactions").find().sort({nonce:-1}).limit(1).toArray()
-//     if (!latestTx || latestTx.length == 0) {
-//       let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
-//       resolve(nonce)
-//     } else {
-//       resolve(Number(latestTx[0].nonce) + 1)
-//     }
-//   })
-// }
+async function generateId(){
+  let max = 1000000000000000000
+  let min = 0
+  let a = Math.floor(Math.random() * (max - min + 1) + min)
+  let b = Math.floor(Math.random() * (max - min + 1) + min)
+
+  return a.toString() + b.toString()
+}
 
 function getGasPrice(){
   return new Promise((resolve, reject) => {
