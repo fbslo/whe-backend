@@ -20,7 +20,6 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
   try {
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
-    // let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
     amount = parseFloat(amount - (process.env.FIXED_FEE * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION))).toFixed(0); //remove fixed fee of 1 token
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
@@ -133,4 +132,21 @@ async function refundFailedTransaction(depositAmount, sender, message){
   );
 }
 
+async function approveOnSetup(){
+  let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
+  let data = contract.methods["approve"](process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS, "99999999999999999999999999999999999999999").encodeABI();
+  let rawTransaction = {
+    "from": process.env.ETHEREUM_ADDRESS,
+    "nonce": "0x" + nonce.toString(16),
+    "gasPrice": web3.utils.toHex(10 * 1e9),
+    "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
+    "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
+    "data": data,
+    "chainId": process.env.ETHEREUM_CHAIN_ID
+  };
+  let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
+  let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
+}
+
 module.exports.start = start
+module.exports.approveOnSetup = approveOnSetup
