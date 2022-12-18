@@ -135,6 +135,7 @@ async function refundFailedTransaction(depositAmount, sender, message){
 async function approveOnSetup(){
   let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
   let data = contract.methods["approve"](process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS, "99999999999999999999999999999999999999999").encodeABI();
+  let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
   let rawTransaction = {
     "from": process.env.ETHEREUM_ADDRESS,
     "nonce": "0x" + nonce.toString(16),
