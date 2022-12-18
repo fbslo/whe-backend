@@ -54,7 +54,4 @@ async function checkPendingTransactions(){
   }
 }
 
-
-
 module.exports.checkPendingTransactions = checkPendingTransactions
-module.exports.runStartupCheck = runStartupCheck

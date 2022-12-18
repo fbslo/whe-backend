@@ -22,8 +22,8 @@ contract CallerProxy {
       _;
   }
 
-  mapping(address => bool) isApproved;
-  mapping(address => mapping(uint256 => bool)) usedIds;
+  mapping(address => bool) public isApproved;
+  mapping(address => mapping(uint256 => bool)) public usedIds;
 
   function transfer(address token, address to, uint256 amount, uint256 id) external onlyApproved {
     require(usedIds[token][id] == false, "already used");
