@@ -29,6 +29,8 @@ async function checkPendingTransactions(){
           let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
           let gasPrice = Number(parseFloat(Number(pending[i].gasPrice) * 1.15).toFixed(3));
 
+          if (gasPrice > 100) gasPrice = 100
+
           let rawTransaction = {
             "from": process.env.ETHEREUM_ADDRESS,
             "nonce": "0x" + nonce.toString(16),
@@ -41,7 +43,7 @@ async function checkPendingTransactions(){
           let signedTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
 
           await database.collection("pending_transactions").updateOne({ id: pending[i].id },
-            {$set: { isPending: true, lastUpdate: new Date().getTime() } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
+            {$set: { isPending: true, lastUpdate: new Date().getTime(), gasPrice: gasPrice } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
           )
 
           try {
