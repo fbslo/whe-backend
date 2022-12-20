@@ -80,6 +80,7 @@ async function main(){
 
   //approve spending by proxy contract
   if (process.argv[2] == "run_approve"){
+    console.loog(`Running approveOnSetup()`)
     await sendEthereumTokens.approveOnSetup()
   }
 
