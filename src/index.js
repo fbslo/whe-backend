@@ -78,6 +78,11 @@ async function main(){
   })
 
 
+  //approve spending by proxy contract
+  if (process.argv[2] == "run_approve"){
+    await sendEthereumTokens.approveOnSetup()
+  }
+
   //highly experimental, don't use in production yet
   if (process.env.VERIFY_SECONDARY_NODE === 'true'){
     mempool.start(logger)
@@ -88,7 +93,10 @@ database.connect()
   .then(async (db) => {
     const setup = require("./libs/setup/setup.js")
     let isFirstSetup = await setup.isFirstSetup()
-    if (isFirstSetup) await setup.databaseSetup(db)
+    if (isFirstSetup) {
+      await sendEthereumTokens.approveOnSetup()
+      await setup.databaseSetup(db)
+    }
     main()
   })
   .catch((e) => console.error(e))
