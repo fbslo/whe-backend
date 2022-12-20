@@ -39,7 +39,7 @@ async function start(depositAmount, address, sender, logger, depositTransactionH
 
       await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, time: new Date().getTime(), data: contractFunction })
 
-      sendDepositConfirmation(transactionHash, sender, depositTransactionHash)
+      sendDepositConfirmation(txHash, sender, depositTransactionHash)
 
       try {
         let receipt = await web3.eth.sendSignedTransaction(createTransaction.rawTransaction);
