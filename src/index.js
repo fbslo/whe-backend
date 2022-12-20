@@ -94,7 +94,6 @@ database.connect()
     const setup = require("./libs/setup/setup.js")
     let isFirstSetup = await setup.isFirstSetup()
     if (isFirstSetup){
-      await sendEthereumTokens.approveOnSetup()
       await setup.databaseSetup(db)
     }
     main()
