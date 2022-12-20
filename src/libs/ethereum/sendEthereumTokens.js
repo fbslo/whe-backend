@@ -38,7 +38,7 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
         "nonce": "0x" + nonce.toString(16),
         "gasPrice": web3.utils.toHex(gasPrice * 1e9),
         "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
-        "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
+        "to": process.env.ETHEREUM_PROXY_CONTRACT_ADDRESS,
         "data": contractFunction,
         "chainId": process.env.ETHEREUM_CHAIN_ID
       };
