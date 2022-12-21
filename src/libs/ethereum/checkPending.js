@@ -13,6 +13,7 @@ const database = mongo.get().db("oracle")
 
 async function checkPendingTransactions(){
   let pending = await (await database.collection("pending_transactions").find({ isPending: true })).toArray()
+  let tokenABI = require("./tokenABI.js");
   let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
 
   for (let i in pending){
