@@ -17,7 +17,7 @@ async function checkPendingTransactions(){
 
   for (let i in pending){
     try {
-      let getOnChainStatus = await contract.methods.nonces(process.env.ETHEREUM_CONTRACT_ADDRESS, pending[i].id).call()
+      let getOnChainStatus = await contract.methods.nonces(process.env.ETHEREUM_ADDRESS, pending[i].id).call()
 
       if (getOnChainStatus){
         await database.collection("pending_transactions").updateOne({ id: pending[i].id },
