@@ -23,8 +23,9 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
+      let id = await generateId()
 
-      let sigNonce = new Date().getTime() //Nonce doesn't have to be in order, just unique
+      let sigNonce = id //new Date().getTime() //Nonce doesn't have to be in order, just unique
       let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
@@ -44,7 +45,12 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
       let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
 
-      await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, time: new Date().getTime(), data: contractFunction })
+      await database.collection("pending_transactions").insertOne({
+        id: id,
+        isPending: true, transactionHash: txHash, nonce: nonce,
+        sender: sender, time: new Date().getTime(), data: contractFunction,
+        gasPrice: gasPrice, lastUpdate: new Date().getTime()
+      })
 
       sendDepositConfirmation(txHash, sender, depositTransaction)
 
@@ -76,6 +82,15 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
+}
+
+async function generateId(){
+  let max = 1000000000000000000
+  let min = 0
+  let a = Math.floor(Math.random() * (max - min + 1) + min)
+  let b = Math.floor(Math.random() * (max - min + 1) + min)
+
+  return a.toString() + b.toString()
 }
 
 function getGasPrice(){
