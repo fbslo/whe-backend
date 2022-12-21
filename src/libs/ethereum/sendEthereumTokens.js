@@ -26,7 +26,6 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
-
       let sigNonce = id //new Date().getTime() //Nonce doesn't have to be in order, just unique
       let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
       let from = process.env.ETHEREUM_ADDRESS
@@ -58,13 +57,10 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       }
 
     }
-  } catch(e){
+  } catch(e) {
     let details  = {
       id: id,
       depositAmount: depositAmount,
-      amount: amount,
-      gasPrice: gasPrice,
-      nonce: nonce,
       address: address,
       sender: sender,
       time: new Date()
