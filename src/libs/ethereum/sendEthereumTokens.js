@@ -61,11 +61,7 @@ async function start(depositAmount, address, sender, logger, depositTransactionH
     }
   } catch(e){
     let details  = {
-      id: id,
       depositAmount: depositAmount,
-      amount: amount,
-      gasPrice: gasPrice,
-      nonce: nonce,
       address: address,
       sender: sender,
       time: new Date()
