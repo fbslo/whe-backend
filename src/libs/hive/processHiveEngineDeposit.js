@@ -59,7 +59,7 @@ function getTxFromDatabase(transactionId){
 }
 
 function pushToDatabase(transactionId){
-  database.collection("hive_transactions").findOne({ transactionId: transactionId }, (err, result) => {
+  database.collection("hive_transactions").insertOne({ transactionId: transactionId }, (err, result) => {
     if (err) console.log(err)
   })
 }
