@@ -14,17 +14,19 @@ const database = mongo.get().db("oracle")
 const tokenABI = require("./tokenABI.js");
 const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 
+let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
+
 async function start(depositAmount, address, sender, logger, depositTransaction){
   try {
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
-    let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
     amount = parseFloat(amount - (process.env.FIXED_FEE * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION))).toFixed(0); //remove fixed fee of 1 token
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
+      let id = await generateId()
 
-      let sigNonce = new Date().getTime() //Nonce doesn't have to be in order, just unique
+      let sigNonce = id //new Date().getTime() //Nonce doesn't have to be in order, just unique
       let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
       let from = process.env.ETHEREUM_ADDRESS
       let chainID = process.env.CHAIN_ID
@@ -46,7 +48,12 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
       let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
 
-      await database.collection("pending_transactions").insertOne({ isPending: true, transactionHash: txHash, nonce: nonce, sender: sender, time: new Date().getTime(), data: contractFunction })
+      await database.collection("pending_transactions").insertOne({
+        id: id,
+        isPending: true, transactionHash: txHash, nonce: nonce,
+        sender: sender, time: new Date().getTime(), data: contractFunction,
+        gasPrice: gasPrice, lastUpdate: new Date().getTime()
+      })
 
       sendDepositConfirmation(txHash, sender, depositTransaction)
 
@@ -59,7 +66,11 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     }
   } catch(e){
     let details  = {
+      id: id,
       depositAmount: depositAmount,
+      amount: amount,
+      gasPrice: gasPrice,
+      nonce: nonce,
       address: address,
       sender: sender,
       time: new Date()
@@ -78,6 +89,15 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       refundFailedTransaction('0.001', sender, 'Internal server error while processing your request, please contact support')
     }
   }
+}
+
+async function generateId(){
+  let max = 1000000000000000000
+  let min = 0
+  let a = Math.floor(Math.random() * (max - min + 1) + min)
+  let b = Math.floor(Math.random() * (max - min + 1) + min)
+
+  return a.toString() + b.toString()
 }
 
 function getGasPrice(){
