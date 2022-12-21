@@ -17,6 +17,8 @@ const hiveEngineTokenPrice = require("../market/hiveEngineTokenPrice.js")
 let contract = new web3.eth.Contract(tokenABI.ABI, process.env.ETHEREUM_CONTRACT_ADDRESS);
 
 async function start(depositAmount, address, sender, logger, depositTransaction){
+  let id = await generateId()
+
   try {
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
     amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
@@ -24,7 +26,6 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
     if (amount <= 0){ //if amount is less than 0, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
-      let id = await generateId()
 
       let sigNonce = id //new Date().getTime() //Nonce doesn't have to be in order, just unique
       let signatureTransfer = await prepareSignature(process.env.ETHEREUM_ADDRESS, address, amount, sigNonce);
