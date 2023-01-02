@@ -30,7 +30,14 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let chainID = process.env.CHAIN_ID
 
       let contractFunction = proxyContractInteface.methods["transfer"](process.env.ETHEREUM_CONTRACT_ADDRESS, address, amount, id).encodeABI();
-      let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+
+      let nonce = 0;
+      
+      try {
+        nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
+      } catch (e){
+        console.log(`Failed to get nonce: ${e.message}`)
+      }
 
       let gasPrice = await getGasPrice();
       let rawTransaction = {
