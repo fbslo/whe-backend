@@ -24,7 +24,7 @@ async function checkPendingTransactions(){
           {$set: { isPending: false, lastUpdate: new Date().getTime() } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }
         )
       } else {
-        if (new Date().getTime() - pending[i].lastUpdate > (30 * 60000)){
+        if (new Date().getTime() - pending[i].lastUpdate > (10 * 60000)){
           console.log(`Updating: ${pending[i].id}`)
           let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
           let gasPrice = Number(parseFloat(Number(pending[i].gasPrice) * 1.15).toFixed(3));
