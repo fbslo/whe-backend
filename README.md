@@ -30,6 +30,8 @@ Installation:
 
 Read: https://hive.blog/hiveengine/@fbslo/introducing-wrapped-hive-engine-tokens-wtokens-in-a-box
 
+For ETHEREUM_PROXY_CONTRACT_ADDRESS address, deploy same code as on https://bscscan.com/address/0x5ae605e16d7655eedb16e02d78664cd6e383eefa#code.
+
 ---
 
 Special thanks to @superoo7 and his work on https://github.com/superoo7/BSwap contract.
