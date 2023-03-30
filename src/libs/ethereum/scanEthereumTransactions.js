@@ -37,14 +37,24 @@ async function start(callback){
 
 async function getERC20TransactionsByEvent(tokenContractAddress) {
   return new Promise(async (resolve, reject) => {
-    let currentBlockNumber = await web3.eth.getBlockNumber();
-    let lastProcessedBlock = currentBlockNumber - 3000 //await getLastProcesedBlock()
-    let fromBlock = lastProcessedBlock;
-    let toBlock = currentBlockNumber - 12 //wait 12 confirmations
-    let contract = new web3.eth.Contract(tokenABI.ABI, tokenContractAddress);
-    let pastEvents = await contract.getPastEvents("convertToken", {}, { fromBlock: fromBlock, toBlock: toBlock })
-    updateLastProcessedBlock(toBlock)
-    resolve(pastEvents)
+    try {
+      let currentBlockNumber = await web3.eth.getBlockNumber();
+      let lastProcessedBlock = currentBlockNumber - 3000 //await getLastProcesedBlock()
+      let fromBlock = lastProcessedBlock;
+      let toBlock = currentBlockNumber - 12 //wait 12 confirmations
+      let contract = new web3.eth.Contract(tokenABI.ABI, tokenContractAddress);
+      try {
+        let pastEvents = await contract.getPastEvents("convertToken", {}, { fromBlock: fromBlock, toBlock: toBlock })
+        updateLastProcessedBlock(toBlock)
+        resolve(pastEvents)
+      } catch (e){
+        console.log(`Error getting past events: ${e}`)
+        resolve([])
+      }
+    } catch (e) {
+      console.log(`Error getting block number: ${e}`)
+      resolve([])
+    }
   })
 }
 
