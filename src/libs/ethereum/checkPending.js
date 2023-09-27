@@ -19,6 +19,8 @@ async function checkPendingTransactions(){
     try {
       let getOnChainStatus = await proxyContractInteface.methods.usedIds(process.env.ETHEREUM_CONTRACT_ADDRESS, pending[i].id).call()
 
+      console.log(`OnChainStaus: ${pending[i].id}: ${getOnChainStatus}`)
+
       if (getOnChainStatus){
         await database.collection("pending_transactions").updateOne({ id: pending[i].id },
           {$set: { isPending: false, lastUpdate: new Date().getTime() } }, (err, res) => { if (err) console.log(`Error updating pending transaction: ${err}`) }

@@ -62,7 +62,8 @@ async function main(){
         .then((result) => {
           if (!alreadyProcessed.includes(result.hash)){
             alreadyProcessed.push(result.hash) //prevent double spend
-            processHiveEngineDeposit.transfer(result.username, result.amount, result.hash)
+            let fee = (result.amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))
+            processHiveEngineDeposit.transfer(result.username, result.amount - fee, result.hash)
           }
         })
         .catch((err) => {
