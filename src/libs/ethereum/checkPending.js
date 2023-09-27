@@ -31,7 +31,7 @@ async function checkPendingTransactions(){
           let nonce = await web3.eth.getTransactionCount(process.env.ETHEREUM_ADDRESS, 'pending');
           let gasPrice = Number(parseFloat(Number(pending[i].gasPrice) * 1.15).toFixed(3));
 
-          if (gasPrice > 100) gasPrice = 100
+          if (gasPrice > 20) gasPrice = 20
 
           let rawTransaction = {
             "from": process.env.ETHEREUM_ADDRESS,
