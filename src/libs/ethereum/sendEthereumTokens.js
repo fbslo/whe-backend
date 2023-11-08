@@ -109,10 +109,9 @@ async function refundFailedTransaction(depositAmount, sender, message){
 function getRecomendedGasPrice(){
   return new Promise((resolve, reject) => {
     axios
-      .get(`https://ethgasstation.info/api/ethgasAPI.json?api-key=${process.env.ETH_GAS_STATON_API_KEY}`)
+      .get(`https://api.owlracle.info/v4/eth/gas?apikey=${process.env.OWLRACLE_API_KEY}`)
       .then(response => {
-        let speed = process.env.ETH_FEE_SPEED
-        if (response.data[speed]) resolve(response.data[speed] / 10)
+        if (response.data.speeds["1"]) resolve(response.data.speeds["1"].baseFee)
         else reject("data_incorrect")
       })
       .catch(err => {
