@@ -33,7 +33,7 @@ async function checkPendingTransactions(){
           let rawTransaction = {
             "from": process.env.ETHEREUM_ADDRESS,
             "nonce": "0x" + nonce.toString(16),
-            "gasPrice": web3.utils.toHex(gasPrice * 1e9),
+            "gasPrice": web3.utils.toHex(parseFloat(gasPrice * 1e9).toFixed(0)),
             "gasLimit": web3.utils.toHex(process.env.ETHEREUM_GAS_LIMIT),
             "to": process.env.ETHEREUM_CONTRACT_ADDRESS,
             "data": pending[i].data,
