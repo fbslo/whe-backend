@@ -1,5 +1,7 @@
 const { HiveEngine } = require("@splinterlands/hive-interface")
-const hive_engine = new HiveEngine();
+const hive_engine = new HiveEngine({
+  rpc_url: process.env.HIVE_ENGINE_RPC || "https://api.hive-engine.com/rpc"
+});
 
 const axios = require('axios');
 

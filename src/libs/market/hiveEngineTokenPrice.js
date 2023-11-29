@@ -22,7 +22,7 @@ function getHiveEtherRate(){
 
 function getHiveHETokenRate(){
   return new Promise((resolve, reject) => {
-    let url = 'https://api.hive-engine.com/rpc/contracts'
+    let url = process.env.HIVE_ENGINE_RPC + '/contracts'
     let params = { 'contract': 'market', 'table': 'buyBook', 'query': { 'symbol': process.env.TOKEN_SYMBOL }, 'limit': 1000, 'offset': 0, 'indexes': [] }
     let request_body = { 'jsonrpc': '2.0', 'id': 1, 'method': 'find', 'params': params }
     axios
