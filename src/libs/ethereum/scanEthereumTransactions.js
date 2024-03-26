@@ -37,7 +37,7 @@ async function start(callback){
 
 async function getERC20TransactionsByEvent(tokenContractAddress) {
   return new Promise(async (resolve, reject) => {
-    let currentBlockNumber = await web3.eth.getBlockNumber();
+    let currentBlockNumber = await web3.eth.getBlockNumber("latest");
     // let lastProcessedBlock = await getLastProcesedBlock()
     let fromBlock = currentBlockNumber - 3400;
     let toBlock = currentBlockNumber - 12 //wait 12 confirmations
