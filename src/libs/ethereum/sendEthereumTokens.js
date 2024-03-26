@@ -97,16 +97,18 @@ async function generateId(){
 }
 
 function getGasPrice(){
-  return new Promise((resolve, reject) => {
-    axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
-      .then((res) => {
-        resolve(parseFloat(Number(res.data.result.ProposeGasPrice) + 5).toFixed(0))
-      })
-    .catch((e) => {
-      console.log(`Error getting polygon gas price: ${e}`)
-      resolve(100)
-    })
-  })
+  // return new Promise((resolve, reject) => {
+  //   axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
+  //     .then((res) => {
+  //       resolve(parseFloat(Number(res.data.result.ProposeGasPrice) + 5).toFixed(0))
+  //     })
+  //   .catch((e) => {
+  //     console.log(`Error getting polygon gas price: ${e}`)
+  //     resolve(100)
+  //   })
+  // })
+
+  return 1;
 }
 
 async function signRequest(tx, signer) {
