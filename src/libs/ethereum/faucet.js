@@ -41,9 +41,9 @@ async function send(tx, logger){
         let createTransaction = await web3.eth.accounts.signTransaction(rawTransaction, process.env.ETHEREUM_PRIVATE_KEY)
         let txHash = await web3.utils.keccak256(createTransaction.rawTransaction)
     
-        await database.collection("pending_transactions").insertOne({
+        await database.collection("faucet_transactions").insertOne({
           id: id,
-          isPending: true, transactionHash: txHash, nonce: nonce,
+          transactionHash: txHash, nonce: nonce,
           sender: sender, time: new Date().getTime(), data: '0x',
           gasPrice: gasPrice, lastUpdate: new Date().getTime()
         })
