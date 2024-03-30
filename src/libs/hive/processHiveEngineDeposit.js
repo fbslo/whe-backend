@@ -16,6 +16,17 @@ function start(tx){
       let { transactionId, sender, contract, action, payload, logs } = tx
       let isAlreadyInTheDatabase = await getTxFromDatabase(transactionId)
       payload = JSON.parse(payload)
+
+      if (Number(payload.quantity) == process.env.FAUCET_TOKEN_AMOUNT &&
+          payload.memo.startsWith(("gas-")) && 
+          !isAlreadyProcessed.includes(transactionId) &&
+          !logs.includes("error") &&
+          !isAlreadyInTheDatabase
+      ){
+        resolve(`faucet_tx`)
+      }
+
+
       if (Number(payload.quantity) >= process.env.MIN_AMOUNT &&
           Number(payload.quantity) <= process.env.MAX_AMOUNT &&
           web3.utils.isAddress(payload.memo) &&

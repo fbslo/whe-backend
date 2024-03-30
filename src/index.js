@@ -31,6 +31,7 @@ async function main(){
   const processEthereumTransaction = require("./libs/ethereum/processEthereumTransaction.js")
   const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
   const checkPending = require("./libs/ethereum/checkPending.js")
+  const faucet = require("./libs/ethereum/faucet.js")
 
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
   console.log(`Wrapped Hive Engine Oracle\nCopyright: @fbslo, 2022\n`)
@@ -42,6 +43,11 @@ async function main(){
     processHiveEngineDeposit.start(tx)
       .then(async (result) => {
         if (result === 'deposit_refunded') console.log(`Invalid deposit transaction ${tx.transactionId} by ${tx.sender} refunded!`)
+        else if (result === 'faucet_tx') {
+          let payload = JSON.parse(tx.payload)
+          console.log(`Faucet transaction detected! ${tx.sender} to ${payload.memo}`)
+          faucet.send(tx, logger)
+        }
         else if (result === 'valid_deposit') {
           let payload = JSON.parse(tx.payload)
           console.log(`New HE deposit detected! ${payload.quantity} ${process.env.TOKEN_SYMBOL} sent by ${tx.sender}`)
