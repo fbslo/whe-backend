@@ -24,6 +24,7 @@ function start(tx){
           !isAlreadyInTheDatabase
       ){
         resolve(`faucet_tx`)
+        return;
       }
 
 
