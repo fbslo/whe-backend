@@ -38,7 +38,9 @@ async function start(depositAmount, address, sender, logger, depositTransaction)
       let serializedTx = tx.serialize();
       let receipt = await web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
       let { transactionHash, gasUsed, status } = receipt
-      sendDepositConfirmation(transactionHash, sender, depositTransaction)
+
+      let confirmationAmount = (amount / Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)).toString();
+      sendDepositConfirmation(transactionHash, sender, depositTransaction, confirmationAmount)
       if (gasUsed < estimatedGasFee.estimatedGas){ //refund any extra fees
         let spendTransactionFeeInHETokens = parseFloat(gasUsed / hiveEngineTokenPriceInEther).toFixed(process.env.HIVE_TOKEN_PRECISION)
         let extraFeeRefund = (estimatedTransactionFeeInHETokens / Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION)) - spendTransactionFeeInHETokens
@@ -76,12 +78,12 @@ async function sendFeeRefund(amount, sender){
   let transaction = await hive.custom_json('ssc-mainnet-hive', json, process.env.HIVE_ACCOUNT, process.env.HIVE_ACCOUNT_PRIVATE_KEY, true);
 }
 
-async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash){
+async function sendDepositConfirmation(transactionHash, sender, depositTransactionHash, amount){
   let memo;
   if (process.env.IS_LEO_BRIDGE_ENABLED && sender == 'leobridge'){
     memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}, depositTxHash: ${depositTransactionHash}`
   } else {
-    memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
+    memo = `${amount} Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
   }
   let json = {
     contractName: "tokens", contractAction: "transfer", contractPayload: {
