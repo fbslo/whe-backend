@@ -83,7 +83,7 @@ async function sendDepositConfirmation(transactionHash, sender, depositTransacti
   if (process.env.IS_LEO_BRIDGE_ENABLED && sender == 'leobridge'){
     memo = `Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}, depositTxHash: ${depositTransactionHash}`
   } else {
-    memo = `${amount} Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash}`
+    memo = `${amount} Wrapped ${process.env.TOKEN_SYMBOL} tokens sent! Transaction Hash: ${transactionHash} Transaction Id: ${depositTransactionHash}`
   }
   let json = {
     contractName: "tokens", contractAction: "transfer", contractPayload: {
