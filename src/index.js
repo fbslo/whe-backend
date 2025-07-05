@@ -32,6 +32,8 @@ async function main(){
   const sendEthereumTokens = require("./libs/ethereum/sendEthereumTokens.js")
   const checkPending = require("./libs/ethereum/checkPending.js")
 
+  const otherBridges = require("./otherBridges.js")
+
   console.log("-".repeat(process.stdout.columns ? process.stdout.columns : 69))
   console.log(`Wrapped Hive Engine Oracle\nCopyright: @fbslo, 2022\n`)
   console.log(`Token Symbol: ${process.env.TOKEN_SYMBOL}\nHive account: ${process.env.HIVE_ACCOUNT}\nEthereum contract: ${process.env.ETHEREUM_CONTRACT_ADDRESS}`)
@@ -62,6 +64,24 @@ async function main(){
           if (!alreadyProcessed.includes(result.hash)){
             alreadyProcessed.push(result.hash) //prevent double spend
             let fee = Number(result.amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))
+
+            //check if destination is another chain, not hive
+            if (otherBridges.isCrossBridgeMemo(result.username)){
+              let userAddress = result.username.split("-")[1] //get destination address
+              let bridgeUsername = otherBridges.getTargetBridgeAddress(result.username)
+              if (!userAddress || !bridgeUsername){
+                console.log(`Error sending to another bridge: address or bridgeUsername is null; full memo: ${result.username}, bridge: ${bridgeUsername}`)
+                return;
+              }
+              if (bridgeUsername == process.env.HIVE_ACCOUNT){
+                console.log(`Error sending cross-bridge: source == target chain`);
+                return;
+              }
+              console.log(`Sending cross-bridge transfer: to ${bridgeUsername}, amount: ${result.amount - fee}, user: ${userAddress}`)
+              processHiveEngineDeposit.transferCustomMemo(bridgeUsername, result.amount - fee, userAddress);
+              return;
+            }
+
             processHiveEngineDeposit.transfer(result.username, result.amount - fee, result.hash)
           }
         })
