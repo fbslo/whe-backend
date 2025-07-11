@@ -17,8 +17,9 @@ let proxyContractInteface = new web3.eth.Contract(require("./ProxyContractABI.js
 async function start(depositAmount, address, sender, logger, depositTransactionHash){
   try {
     let amount = depositAmount * Math.pow(10, process.env.ETHEREUM_TOKEN_PRECISION); //remove decimal places => 0.001, 3 decimal places => 0.001 * 1000 = 1
-    amount = parseFloat(amount - (amount * (process.env.PERCENTAGE_DEPOSIT_FEE / 100))).toFixed(0); //remove % fee
+    amount = parseFloat(amount - (amount * (Number(process.env.PERCENTAGE_DEPOSIT_FEE) / 100))).toFixed(0); //remove % fee
     amount = parseFloat(amount - 1000).toFixed(0)
+    console.log(`sendEthereumTokens - start - amount ${amount}`)
     if (amount <= 0){ //if amount is less than 1, refund
       refundFailedTransaction(depositAmount, sender, 'Amount after fees is less or equal to 0')
     } else {
