@@ -46,7 +46,7 @@ function start(tx){
           //if we are refunding a tx from another bridge, send it to refunds address to prevent loops
           if (otherBridges.isOtherBridge(sender)){
             if (Number(payload.quantity) < process.env.MIN_AMOUNT){
-              console.log(`not refunding cross-bridge dedposit under MIN_AMOUNT`)
+              console.log(`not refunding cross-bridge deposit under MIN_AMOUNT`)
               resolve(`deposit_refunded`)
               return;
             }
