@@ -137,7 +137,7 @@ async function refundFailedTransaction(depositAmount, sender, message){
 
 function getGasPrice(){
   return new Promise((resolve, reject) => {
-    axios.get("https://api.bscscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
+    axios.get("https://api.etherscan.io/v2/api?chainid=56&module=gastracker&action=gasoracle&apikey=" + process.env.BSC_SCAN_API_KEY)
       .then((res) => {
         resolve(Number(res.data.result.ProposeGasPrice))
       })
