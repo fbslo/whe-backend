@@ -98,7 +98,7 @@ async function generateId(){
 
 function getGasPrice(){
   return new Promise((resolve, reject) => {
-    axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
+    axios.get("https://api.etherscan.io/v2/api?chainid=56module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
       .then((res) => {
         resolve(parseFloat(Number(res.data.result.ProposeGasPrice) + 5).toFixed(0))
       })
