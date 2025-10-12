@@ -39,8 +39,17 @@ async function getERC20TransactionsByEvent(tokenContractAddress) {
   return new Promise(async (resolve, reject) => {
     let currentBlockNumber = await web3.eth.getBlockNumber();
     // let lastProcessedBlock = await getLastProcesedBlock()
-    let fromBlock = currentBlockNumber - 3400;
+
+    let fromBlock = currentBlockNumber - 2500;
     let toBlock = currentBlockNumber - 12 //wait 12 confirmations
+
+    if (toBlock - fromBlock > 1000){
+      toBlock = fromBlock + 1000
+      if (toBlock > currentBlockNumber - 12){
+        toBlock = currentBlockNumber - 12
+      }
+    }
+
     let contract = new web3.eth.Contract(tokenABI.ABI, tokenContractAddress);
     let pastEvents = await contract.getPastEvents("convertToken", {}, { fromBlock: fromBlock, toBlock: toBlock })
     updateLastProcessedBlock(toBlock)
