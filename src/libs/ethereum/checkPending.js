@@ -60,17 +60,17 @@ async function checkPendingTransactions(){
 }
 
 function getGasPrice(){
-  // return new Promise((resolve, reject) => {
-  //   axios.get("https://api.polygonscan.com/api?module=gastracker&action=gasoracle&apikey=" + process.env.POLYGON_SCAN_API_KEY)
-  //     .then((res) => {
-  //       resolve(parseFloat(Number(res.data.result.ProposeGasPrice) + 5).toFixed(0))
-  //     })
-  //   .catch((e) => {
-  //     console.log(`Error getting polygon gas price: ${e}`)
-  //     resolve(100)
-  //   })
-  // })
-  return 1;
+  return new Promise((resolve, reject) => {
+    axios.get(`https://api.blocknative.com/gasprices/blockprices?chainid=${process.env.ETHEREUM_CHAIN_ID}`)
+      .then((res) => {
+        console.log(res.data)
+        resolve(Number(res.data.blockPrices[0].estimatedPrices[0].price))
+      })
+    .catch((e) => {
+      console.log(`Error getting gas price: ${e}`)
+      resolve(1)
+    })
+  })
 }
 
 module.exports.checkPendingTransactions = checkPendingTransactions
