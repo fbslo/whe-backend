@@ -46,7 +46,7 @@ async function checkPendingTransactions(){
           )
 
           try {
-            let receipt = web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
+            let receipt = await web3.eth.sendSignedTransaction(signedTransaction.rawTransaction);
             await new Promise(r => setTimeout(r, 10000));
           } catch (e){
             console.log(`Error sending signed transaction: ${e}`)
@@ -63,8 +63,7 @@ function getGasPrice(){
   return new Promise((resolve, reject) => {
     axios.get(`https://api.blocknative.com/gasprices/blockprices?chainid=${process.env.ETHEREUM_CHAIN_ID}`)
       .then((res) => {
-        console.log(res.data)
-        resolve(Number(res.data.blockPrices[0].estimatedPrices[0].price))
+        resolve(Number(res.data.blockPrices[0].estimatedPrices[0].price) * 2)
       })
     .catch((e) => {
       console.log(`Error getting gas price: ${e}`)

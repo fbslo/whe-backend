@@ -96,14 +96,11 @@ async function generateId(){
   return a.toString() + b.toString()
 }
 
-console.log(getGasPrice())
-
 function getGasPrice(){
   return new Promise((resolve, reject) => {
     axios.get(`https://api.blocknative.com/gasprices/blockprices?chainid=${process.env.ETHEREUM_CHAIN_ID}`)
       .then((res) => {
-        console.log(res.data)
-        resolve(Number(res.data.blockPrices[0].estimatedPrices[0].price))
+        resolve(Number(res.data.blockPrices[0].estimatedPrices[0].price) * 2)
       })
     .catch((e) => {
       console.log(`Error getting gas price: ${e}`)
