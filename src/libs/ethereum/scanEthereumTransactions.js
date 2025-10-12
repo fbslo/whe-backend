@@ -40,7 +40,7 @@ async function getERC20TransactionsByEvent(tokenContractAddress) {
     let currentBlockNumber = await web3.eth.getBlockNumber();
     // let lastProcessedBlock = await getLastProcesedBlock()
 
-    let fromBlock = currentBlockNumber - 2500;
+    let fromBlock = currentBlockNumber - 62;
     let toBlock = currentBlockNumber - 12 //wait 12 confirmations
 
     if (toBlock - fromBlock > 50){
