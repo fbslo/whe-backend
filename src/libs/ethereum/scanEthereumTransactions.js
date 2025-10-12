@@ -43,8 +43,8 @@ async function getERC20TransactionsByEvent(tokenContractAddress) {
     let fromBlock = currentBlockNumber - 2500;
     let toBlock = currentBlockNumber - 12 //wait 12 confirmations
 
-    if (toBlock - fromBlock > 1000){
-      toBlock = fromBlock + 1000
+    if (toBlock - fromBlock > 50){
+      toBlock = fromBlock + 50
       if (toBlock > currentBlockNumber - 12){
         toBlock = currentBlockNumber - 12
       }
